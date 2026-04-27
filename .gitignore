@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg
+*.egg-info/
+
+# PyInstaller build artefacts
+build/
+dist/
+*.spec.bak
+
+# Database (auto-created at runtime; keep out of version control)
+inventory.db
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# IDE / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db

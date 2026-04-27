@@ -13,6 +13,7 @@ Launch:   python main.py
 Build:    python build_app.py
 """
 
+import re as _re
 import sys
 import os
 import tkinter as tk
@@ -85,7 +86,6 @@ def play_beep(success: bool = True):
 def ts_now() -> str:
     return datetime.now().strftime("%H:%M:%S")
 
-import re as _re
 
 def _sanitise_barcode(raw: str) -> str:
     """
@@ -1199,15 +1199,16 @@ class InventoryApp(ctk.CTk):
         if prepend:
             row.pack(fill="x", padx=4, pady=3,
                      before=self._restock_log_rows[0] if self._restock_log_rows else None)
+            self._restock_log_rows.insert(0, row)
         else:
             row.pack(fill="x", padx=4, pady=3)
+            self._restock_log_rows.append(row)
         ctk.CTkLabel(row, text=ts, font=(FONT, 11), text_color=C_TEXT_DIM,
                      width=72).pack(side="left", padx=(10, 4))
         ctk.CTkLabel(row, text=text, font=(FONT, 12), text_color=color,
                      anchor="w").pack(side="left", fill="x", expand=True, padx=(0, 10))
-        self._restock_log_rows.append(row)
         if len(self._restock_log_rows) > 20:
-            self._restock_log_rows.pop(0).destroy()
+            self._restock_log_rows.pop().destroy()
 
     # ==================================================================
     #  REPORTS VIEW
