@@ -1,13 +1,17 @@
 """
 build_app.py
 ------------
-Compiles Inventory Manager Pro into a single standalone .exe using PyInstaller.
+Compiles Inventory Manager Pro into a single standalone .exe.
 
 Flags used:
-  --onefile    -> single .exe, no folder
-  --noconsole  -> no black terminal window (windowed app)
-  --noupx      -> disables UPX compression (AV false-positive trigger)
+  --onefile    -> single .exe
+  --noconsole  -> no black terminal window
+  --noupx      -> disables UPX compression (major AV false-positive trigger)
   --noconfirm  -> overwrites dist/ without prompting
+
+New in this version:
+  - Bundles barcode_scanner.py (OpenCV + pyzbar camera scanning)
+  - Collects all cv2 / pyzbar DLLs via collect_all hooks
 
 Usage:
     python build_app.py
@@ -33,11 +37,14 @@ def clean_old_build():
 
 
 def build():
-    print("=" * 60)
+    print("=" * 62)
     print("  Inventory Manager Pro -- PyInstaller Build")
-    print("=" * 60)
+    print("  (includes OpenCV + pyzbar camera scanner)")
+    print("=" * 62)
 
     clean_old_build()
+
+    sep = os.pathsep   # ';' on Windows, ':' on Unix
 
     cmd = [
         sys.executable, "-m", "PyInstaller",
@@ -46,14 +53,22 @@ def build():
         "--noupx",
         "--noconfirm",
         "--name", EXE_NAME,
-        "--add-data", f"database_manager.py{os.pathsep}.",
+        # Python source files to bundle
+        "--add-data", f"database_manager.py{sep}.",
+        "--add-data", f"barcode_scanner.py{sep}.",
+        # Collect all data/DLLs for bundled packages
+        "--collect-all", "cv2",           # OpenCV (camera capture + QR fallback)
+        "--collect-all", "zxingcpp",      # zxing-cpp barcode decoder (statically linked)
+        "--collect-all", "qrcode",
+        "--collect-all", "flask",
+        "--collect-all", "customtkinter",
         "main.py",
     ]
 
     print("\nRunning PyInstaller...\n")
     subprocess.run(cmd, cwd=HERE)
 
-    print("\n" + "=" * 60)
+    print("\n" + "=" * 62)
     if os.path.exists(EXE_PATH):
         size_mb = os.path.getsize(EXE_PATH) / (1024 * 1024)
         print(f"[OK] Build complete!")
@@ -61,10 +76,11 @@ def build():
         print(f"     Size     : {size_mb:.1f} MB")
         print(f"\n     -> Copy InventoryManager.exe anywhere -- no Python needed.")
         print(f"     -> inventory.db is created next to the .exe on first run.")
+        print(f"     -> Camera scanning requires a USB/built-in webcam.")
     else:
         print("[FAIL] Build failed -- check the output above.")
         sys.exit(1)
-    print("=" * 60)
+    print("=" * 62)
 
 
 if __name__ == "__main__":

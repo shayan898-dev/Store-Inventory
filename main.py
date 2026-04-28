@@ -18,9 +18,21 @@ import os
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
 import customtkinter as ctk
+import threading
+import socket
 from datetime import datetime
+from flask import Flask, jsonify, request, render_template_string
+import qrcode
 
 from database_manager import DatabaseManager
+
+# Camera scanner (optional — gracefully disabled if cv2/pyzbar not installed)
+try:
+    from barcode_scanner import BarcodeScanner as _BarcodeScanner
+    CAMERA_AVAILABLE = True
+except ImportError:
+    CAMERA_AVAILABLE = False
+    _BarcodeScanner  = None
 
 # ---------------------------------------------------------------------------
 # Global theme setup
@@ -55,6 +67,8 @@ CATEGORIES = [
     "General", "Food & Beverage", "Dairy", "Bakery", "Snacks",
     "Beverages", "Household", "Personal Care", "Electronics", "Clothing",
 ]
+
+MOBILE_BRIDGE_PORT = 5000
 
 
 # ---------------------------------------------------------------------------
@@ -171,7 +185,7 @@ class ProductDialog(ctk.CTkToplevel):
         super().__init__(parent)
         self.result = None
         self.title(title)
-        self.geometry("440x520")
+        self.geometry("440x580")
         self.resizable(False, False)
         self.configure(fg_color=C_CARD)
         self.grab_set()
@@ -191,9 +205,25 @@ class ProductDialog(ctk.CTkToplevel):
 
         # ---- Barcode ----
         _lbl("Barcode *")
-        self.e_barcode = ctk.CTkEntry(form, height=38, font=(FONT, 13),
+        bc_row = ctk.CTkFrame(form, fg_color="transparent")
+        bc_row.pack(fill="x")
+        self.e_barcode = ctk.CTkEntry(bc_row, height=38, font=(FONT, 13),
                                        fg_color=C_CARD2, border_color=C_BORDER)
-        self.e_barcode.pack(fill="x")
+        self.e_barcode.pack(side="left", fill="x", expand=True, padx=(0, 8))
+
+        self._scan_btn = ctk.CTkButton(
+            bc_row,
+            text="📷 Scan",
+            width=80,
+            height=38,
+            corner_radius=8,
+            font=(FONT, 12, "bold"),
+            fg_color="#1a3a5c" if CAMERA_AVAILABLE else C_CARD2,
+            hover_color=C_ACCENT if CAMERA_AVAILABLE else C_CARD2,
+            text_color=C_TEXT if CAMERA_AVAILABLE else C_TEXT_DIM,
+            command=self._scan_barcode,
+        )
+        self._scan_btn.pack(side="left")
 
         # ---- Name ----
         _lbl("Product Name *")
@@ -225,9 +255,12 @@ class ProductDialog(ctk.CTkToplevel):
         self.e_price.pack(fill="x")
 
         # Pre-fill when editing
+        self._is_edit = bool(product)
         if product:
             self.e_barcode.insert(0, product.get("barcode", ""))
             self.e_barcode.configure(state="disabled")   # PK — immutable
+            self._scan_btn.configure(state="disabled",   # No scan needed in edit
+                                     fg_color=C_CARD2, text_color=C_TEXT_DIM)
             self.e_name.insert(0, product.get("name", ""))
             cat = product.get("category", "General")
             if cat not in cats:
@@ -245,8 +278,83 @@ class ProductDialog(ctk.CTkToplevel):
         ctk.CTkButton(btn_row, text="Save", fg_color=C_ACCENT,
                       hover_color=C_ACCENT_HVR, command=self._save, width=120).pack(side="right")
 
-        self.e_barcode.focus_set()
+        self._scanner = None   # BarcodeScanner instance (if camera opened)
+        if not self._is_edit:
+            self.e_barcode.focus_set()
         self.bind("<Return>", lambda e: self._save())
+        # Clean up camera on close
+        self.protocol("WM_DELETE_WINDOW", self._on_close)
+
+    # ----------------------------------------------------------------
+    # Camera scanner
+    # ----------------------------------------------------------------
+
+    def _scan_barcode(self):
+        """Opens the camera scanner, fills barcode field on success."""
+        if not CAMERA_AVAILABLE:
+            from tkinter import messagebox
+            messagebox.showinfo(
+                "Not Available",
+                "opencv-python and zxing-cpp must be installed.\n"
+                "Run:  pip install opencv-python zxing-cpp",
+                parent=self,
+            )
+            return
+
+        # Stop any previous scan session
+        if self._scanner and self._scanner.is_running():
+            self._scanner.stop()
+            return
+
+        self._scanner = _BarcodeScanner(camera_index=0)
+        self._scan_btn.configure(text="⏹ Stop", fg_color="#5c1a1a",
+                                  hover_color=C_DANGER)
+
+        self._scanner.scan_async(
+            on_found  = self._barcode_found,
+            on_cancel = self._scan_done,
+            on_error  = self._scan_error,
+            app       = self,
+        )
+
+    def _barcode_found(self, code: str):
+        """Called (main thread) when camera successfully decodes a barcode."""
+        self._scan_done()
+        # Fill the barcode field
+        self.e_barcode.configure(state="normal")
+        self.e_barcode.delete(0, "end")
+        self.e_barcode.insert(0, code)
+        # Move focus to Name so operator can continue typing
+        self.e_name.focus_set()
+
+    def _scan_done(self):
+        """Reset scan button to idle state."""
+        try:
+            self._scan_btn.configure(
+                text="📷 Scan",
+                fg_color="#1a3a5c" if CAMERA_AVAILABLE else C_CARD2,
+                hover_color=C_ACCENT if CAMERA_AVAILABLE else C_CARD2,
+            )
+        except Exception:
+            pass
+
+    def _scan_error(self, msg: str):
+        """Show camera error without crashing the dialog."""
+        self._scan_done()
+        from tkinter import messagebox
+        messagebox.showerror(
+            "Camera Error",
+            f"{msg}\n\nTip: Close Teams/Zoom/Skype and try again.",
+            parent=self,
+        )
+
+    def _on_close(self):
+        """Ensure camera is released before dialog closes."""
+        if self._scanner and self._scanner.is_running():
+            self._scanner.stop()
+        self.destroy()
+
+    # ----------------------------------------------------------------
 
     def _save(self):
         barcode   = self.e_barcode.get().strip()
@@ -354,10 +462,21 @@ class InventoryApp(ctk.CTk):
         self._search_after: int | None = None
         self._checked_barcodes: set    = set()
         self._scan_focus_active: bool  = False
+        self._mobile_bridge_port: int = MOBILE_BRIDGE_PORT
+        self._mobile_bridge_host: str = "0.0.0.0"
+        self._mobile_local_ip: str = self._get_local_ip()
+        self._mobile_qr_image = None
+        # Camera scanner state
+        self._camera_scanner = _BarcodeScanner() if CAMERA_AVAILABLE else None
+        self._cam_btn_sale: ctk.CTkButton | None    = None
+        self._cam_status_sale: ctk.CTkLabel | None  = None
+        self._cam_btn_restock: ctk.CTkButton | None = None
+        self._cam_status_restock: ctk.CTkLabel | None = None
 
         self._build_sidebar()
         self._build_content()
         self._apply_tree_style()
+        self._start_mobile_bridge_server()
 
         self.show_view("inventory")
 
@@ -376,6 +495,250 @@ class InventoryApp(ctk.CTk):
                             text_color=C_TEXT, padx=20, pady=10)
         lbl.place(relx=0.5, rely=0.95, anchor="center")
         self.after(ms, lbl.destroy)
+
+    def _get_local_ip(self) -> str:
+        """Best-effort LAN IP detection for mobile QR link."""
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        try:
+            sock.connect(("8.8.8.8", 80))
+            return sock.getsockname()[0]
+        except Exception:
+            return "127.0.0.1"
+        finally:
+            sock.close()
+
+    @property
+    def _mobile_base_url(self) -> str:
+        return f"http://{self._mobile_local_ip}:{self._mobile_bridge_port}"
+
+    def _start_mobile_bridge_server(self):
+        """Starts a lightweight Flask server in a daemon thread."""
+        self._mobile_flask_app = Flask(__name__)
+
+        @self._mobile_flask_app.get("/")
+        def mobile_index():
+            return render_template_string(self._mobile_scanner_html())
+
+        @self._mobile_flask_app.post("/scan")
+        def mobile_scan():
+            payload = request.get_json(silent=True) or request.form
+            barcode = _sanitise_barcode(str(payload.get("barcode", "")))
+            if len(barcode) < 2:
+                return jsonify({"ok": False, "error": "Invalid barcode"}), 400
+
+            # Route to Tk main thread safely.
+            self.after(0, lambda b=barcode: self._handle_mobile_scan(b))
+            return jsonify({"ok": True, "barcode": barcode})
+
+        @self._mobile_flask_app.get("/health")
+        def mobile_health():
+            return jsonify({"ok": True, "url": self._mobile_base_url})
+
+        def _run_server():
+            try:
+                self._mobile_flask_app.run(
+                    host=self._mobile_bridge_host,
+                    port=self._mobile_bridge_port,
+                    debug=False,
+                    use_reloader=False,
+                )
+            except OSError as exc:
+                print(f"[MobileBridge] Failed to start server: {exc}")
+
+        self._mobile_thread = threading.Thread(
+            target=_run_server,
+            name="MobileScannerBridge",
+            daemon=True,
+        )
+        self._mobile_thread.start()
+
+    def _mobile_scanner_html(self) -> str:
+        """Mobile-optimised barcode scanner page powered by ZXing."""
+        return """
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+    <title>Inventory Mobile Scanner</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --panel: #1e293b;
+            --text: #e2e8f0;
+            --muted: #94a3b8;
+            --ok: #22c55e;
+            --warn: #f59e0b;
+            --accent: #38bdf8;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: "Segoe UI", Tahoma, sans-serif;
+            color: var(--text);
+            background:
+                radial-gradient(1200px 400px at 0% -10%, #1d4ed8 0%, transparent 55%),
+                radial-gradient(1000px 300px at 100% 110%, #0ea5e9 0%, transparent 55%),
+                var(--bg);
+            padding: 16px;
+        }
+        .wrap {
+            max-width: 560px;
+            margin: 0 auto;
+            display: grid;
+            gap: 12px;
+        }
+        .card {
+            background: color-mix(in srgb, var(--panel) 92%, black);
+            border: 1px solid #334155;
+            border-radius: 16px;
+            padding: 14px;
+        }
+        h1 {
+            margin: 0 0 6px;
+            font-size: 1.15rem;
+            font-weight: 700;
+        }
+        p { margin: 0; color: var(--muted); line-height: 1.45; }
+        video {
+            width: 100%;
+            border-radius: 12px;
+            background: #000;
+            border: 1px solid #475569;
+        }
+        .row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        button {
+            border: 0;
+            border-radius: 10px;
+            padding: 10px 14px;
+            color: #00111a;
+            background: var(--accent);
+            font-weight: 700;
+        }
+        .badge {
+            margin-left: auto;
+            font-size: 0.82rem;
+            font-weight: 700;
+            padding: 5px 10px;
+            border-radius: 999px;
+            background: #334155;
+            color: var(--text);
+        }
+        .ok { background: #14532d; color: #86efac; }
+        .warn { background: #78350f; color: #fcd34d; }
+        code {
+            display: block;
+            margin-top: 8px;
+            padding: 10px;
+            background: #0b1220;
+            border: 1px solid #334155;
+            border-radius: 10px;
+            color: #a5f3fc;
+            overflow-wrap: anywhere;
+        }
+    </style>
+</head>
+<body>
+    <div class="wrap">
+        <div class="card">
+            <h1>Inventory Mobile Scanner</h1>
+            <p>Point your camera at a barcode. Detected codes are sent instantly to the desktop app.</p>
+            <code id="serverUrl"></code>
+        </div>
+
+        <div class="card">
+            <video id="preview" playsinline></video>
+            <div class="row">
+                <button id="startBtn" type="button">Start Camera</button>
+                <span id="stateBadge" class="badge warn">idle</span>
+            </div>
+            <p id="lastScan" style="margin-top:10px;">Last scan: none</p>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/@zxing/library@0.20.0/umd/index.min.js"></script>
+    <script>
+        const baseUrl = window.location.origin;
+        const preview = document.getElementById("preview");
+        const startBtn = document.getElementById("startBtn");
+        const stateBadge = document.getElementById("stateBadge");
+        const lastScan = document.getElementById("lastScan");
+        const serverUrl = document.getElementById("serverUrl");
+        serverUrl.textContent = "Desktop bridge: " + baseUrl;
+
+        const reader = new ZXing.BrowserMultiFormatReader();
+        let lastSentCode = "";
+        let lastSentAt = 0;
+
+        const setState = (label, cls) => {
+            stateBadge.textContent = label;
+            stateBadge.className = "badge " + cls;
+        };
+
+        const sendScan = async (barcode) => {
+            const now = Date.now();
+            if (barcode === lastSentCode && (now - lastSentAt) < 1200) {
+                return;
+            }
+            lastSentCode = barcode;
+            lastSentAt = now;
+
+            try {
+                const response = await fetch(baseUrl + "/scan", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ barcode })
+                });
+                if (!response.ok) {
+                    setState("send failed", "warn");
+                    return;
+                }
+                if (navigator.vibrate) navigator.vibrate(80);
+                lastScan.textContent = "Last scan: " + barcode;
+                setState("sent", "ok");
+            } catch (error) {
+                setState("offline", "warn");
+            }
+        };
+
+        const startScan = async () => {
+            setState("starting", "warn");
+            try {
+                const devices = await ZXing.BrowserCodeReader.listVideoInputDevices();
+                const preferred = devices.find((d) => /back|rear|environment/i.test(d.label));
+                const deviceId = (preferred || devices[0])?.deviceId;
+                await reader.decodeFromVideoDevice(deviceId, preview, (result) => {
+                    if (!result) return;
+                    const code = String(result.getText() || "").trim();
+                    if (!code) return;
+                    sendScan(code);
+                });
+                setState("scanning", "ok");
+            } catch (error) {
+                setState("camera blocked", "warn");
+            }
+        };
+
+        startBtn.addEventListener("click", startScan);
+    </script>
+</body>
+</html>
+        """
+
+    def _handle_mobile_scan(self, barcode: str):
+        """Dispatch mobile scans into the active desktop workflow."""
+        if self._active_view == "sales":
+            self._process_sale(barcode=barcode)
+        elif self._active_view == "restock":
+            self._on_restock_scan(barcode=barcode)
+        else:
+            self._toast("Open Sales or Restock mode to accept mobile scans.", ms=2200)
 
     # ------------------------------------------------------------------
     # Sidebar
@@ -408,8 +771,82 @@ class InventoryApp(ctk.CTk):
             btn.pack(fill="x", padx=12, pady=3)
             self._nav_btns[name] = btn
 
+        ctk.CTkButton(
+            sb,
+            text="  📱  Mobile Link",
+            anchor="w",
+            height=42,
+            corner_radius=8,
+            fg_color=C_CARD,
+            hover_color=C_CARD2,
+            text_color=C_TEXT,
+            font=(FONT, 13, "bold"),
+            command=self._open_mobile_link_window,
+        ).pack(fill="x", padx=12, pady=(12, 6))
+
         ctk.CTkLabel(sb, text="SQLite  •  Local Only", font=(FONT, 10),
                      text_color=C_TEXT_DIM).pack(side="bottom", pady=16)
+
+    def _open_mobile_link_window(self):
+        """Shows QR code and URL for connecting a phone scanner."""
+        self._mobile_local_ip = self._get_local_ip()
+        url = self._mobile_base_url
+
+        win = ctk.CTkToplevel(self)
+        win.title("Mobile Scanner Bridge")
+        win.geometry("380x520")
+        win.resizable(False, False)
+        win.configure(fg_color=C_CARD)
+        win.transient(self)
+        win.grab_set()
+
+        ctk.CTkLabel(
+            win,
+            text="📱  Mobile Scanner Bridge",
+            font=(FONT, 18, "bold"),
+            text_color=C_TEXT,
+        ).pack(pady=(22, 6))
+
+        ctk.CTkLabel(
+            win,
+            text="Scan this QR code from your phone on the same Wi-Fi network.",
+            font=(FONT, 12),
+            text_color=C_TEXT_DIM,
+            wraplength=320,
+            justify="center",
+        ).pack(padx=20, pady=(0, 12))
+
+        qr_img = qrcode.make(url).convert("RGB")
+        self._mobile_qr_image = ctk.CTkImage(light_image=qr_img, dark_image=qr_img, size=(240, 240))
+        ctk.CTkLabel(win, text="", image=self._mobile_qr_image).pack(pady=(6, 10))
+
+        url_entry = ctk.CTkEntry(
+            win,
+            height=38,
+            font=(FONT, 12),
+            fg_color=C_CARD2,
+            border_color=C_BORDER,
+            justify="center",
+        )
+        url_entry.insert(0, url)
+        url_entry.configure(state="readonly")
+        url_entry.pack(fill="x", padx=20, pady=(0, 10))
+
+        ctk.CTkLabel(
+            win,
+            text="Tip: Keep desktop on Sales or Restock view while scanning.",
+            font=(FONT, 11),
+            text_color=C_TEXT_DIM,
+        ).pack(pady=(0, 16))
+
+        ctk.CTkButton(
+            win,
+            text="Close",
+            fg_color=C_ACCENT,
+            hover_color=C_ACCENT_HVR,
+            command=win.destroy,
+            width=120,
+        ).pack(pady=(0, 18))
 
     # ------------------------------------------------------------------
     # Content area
@@ -786,8 +1223,32 @@ class InventoryApp(ctk.CTk):
             border_width=2,
             justify="center",
         )
-        self._sale_entry.pack(fill="x", padx=20, pady=(0, 16))
+        self._sale_entry.pack(fill="x", padx=20, pady=(0, 10))
         self._sale_entry.bind("<Return>", self._process_sale)
+
+        # Camera scan button row
+        cam_row = ctk.CTkFrame(scan_card, fg_color="transparent")
+        cam_row.pack(fill="x", padx=20, pady=(0, 16))
+        self._cam_btn_sale = ctk.CTkButton(
+            cam_row,
+            text="📷  Scan with Camera",
+            height=38,
+            corner_radius=8,
+            font=(FONT, 12, "bold"),
+            fg_color="#1a3a5c" if CAMERA_AVAILABLE else C_CARD2,
+            hover_color=C_ACCENT if CAMERA_AVAILABLE else C_CARD2,
+            text_color=C_TEXT if CAMERA_AVAILABLE else C_TEXT_DIM,
+            command=(lambda: self._start_camera_scan("sales")) if CAMERA_AVAILABLE
+                    else lambda: messagebox.showinfo(
+                        "Not Available",
+                        "opencv-python and pyzbar must be installed.\n"
+                        "Run:  pip install opencv-python pyzbar"),
+        )
+        self._cam_btn_sale.pack(side="left", fill="x", expand=True, padx=(0, 8))
+        self._cam_status_sale = ctk.CTkLabel(
+            cam_row, text="" if CAMERA_AVAILABLE else "opencv not installed",
+            font=(FONT, 10), text_color=C_TEXT_DIM, width=130, anchor="w")
+        self._cam_status_sale.pack(side="left")
 
         # ── Live Product Card ─────────────────────────────────────────
         self._prod_card = ctk.CTkFrame(left, fg_color=C_CARD, corner_radius=14,
@@ -878,7 +1339,7 @@ class InventoryApp(ctk.CTk):
 
     # ── Core sale processor ───────────────────────────────────────────
 
-    def _process_sale(self, _=None):
+    def _process_sale(self, _=None, barcode: str | None = None):
         """
         High-speed sale processor — optimised for Barcode2win / HID scanners.
 
@@ -888,8 +1349,11 @@ class InventoryApp(ctk.CTk):
           3. update_stock(bc, -1)  →  'ok' | 'not_found' | 'out_of_stock'.
           4. Trigger correct feedback path for each outcome.
         """
-        raw = self._sale_entry.get()
-        self._sale_entry.delete(0, "end")          # Auto-clear — field ready instantly
+        if barcode is None:
+            raw = self._sale_entry.get()
+            self._sale_entry.delete(0, "end")      # Auto-clear — field ready instantly
+        else:
+            raw = barcode
 
         bc = _sanitise_barcode(raw)
 
@@ -1083,6 +1547,114 @@ class InventoryApp(ctk.CTk):
     def _on_sale_scan(self, event=None):
         self._process_sale(event)
 
+    # ==================================================================
+    #  CAMERA SCANNER  (OpenCV + pyzbar)
+    # ==================================================================
+
+    def _start_camera_scan(self, mode: str):
+        """
+        Launches the desktop camera scanner in a background thread.
+
+        Parameters
+        ----------
+        mode : 'sales' | 'restock'
+            Determines which processing pipeline the scanned code is fed into.
+
+        What happens:
+          1. Button text changes to "Scanning..." and focus is suppressed.
+          2. An OpenCV window opens on the desktop showing the live camera feed
+             with a green viewfinder overlay.
+          3. When a barcode is detected (or the user presses Q/ESC):
+             - The OpenCV window closes automatically.
+             - The barcode is routed to _process_sale() or _on_restock_scan().
+          4. Button resets to "Scan with Camera".
+        """
+        if not CAMERA_AVAILABLE:
+            return
+
+        if self._camera_scanner and self._camera_scanner.is_running():
+            self._camera_scanner.stop()
+            return
+
+        # Temporarily pause ghost focus so it doesn't fight the camera window
+        self._scan_focus_active = False
+
+        self._camera_scanner = _BarcodeScanner(camera_index=0)
+
+        # Update button state
+        self._cam_set_state(mode, scanning=True)
+
+        self._camera_scanner.scan_async(
+            on_found  = lambda code: self._camera_found(code, mode),
+            on_cancel = lambda:      self._camera_cancelled(mode),
+            on_error  = lambda msg:  self._camera_error(msg, mode),
+            app       = self,
+        )
+
+    def _cam_set_state(self, mode: str, scanning: bool):
+        """Toggles the camera button text/colour for scanning vs idle states."""
+        if mode == "sales":
+            btn    = self._cam_btn_sale
+            status = self._cam_status_sale
+        else:
+            btn    = self._cam_btn_restock
+            status = self._cam_status_restock
+
+        if btn is None:
+            return
+
+        if scanning:
+            btn.configure(text="⏹  Stop Camera",
+                          fg_color="#5c1a1a", hover_color=C_DANGER)
+            if status:
+                status.configure(text="Camera open — aim at barcode",
+                                  text_color=C_SUCCESS)
+        else:
+            btn.configure(text="📷  Scan with Camera",
+                          fg_color="#1a3a5c", hover_color=C_ACCENT)
+            if status:
+                status.configure(text="", text_color=C_TEXT_DIM)
+
+    def _camera_found(self, barcode: str, mode: str):
+        """Called (in Tk main thread) when camera successfully decodes a barcode."""
+        self._cam_set_state(mode, scanning=False)
+        # Re-enable ghost focus
+        self._scan_focus_active = True
+        self._scan_focus_tick()
+
+        play_beep(True)   # Audible confirmation — camera has no keyboard beep
+
+        if mode == "sales":
+            self._process_sale(barcode=barcode)
+        else:
+            self._on_restock_scan(barcode=barcode)
+
+    def _camera_cancelled(self, mode: str):
+        """Called when user presses Q/ESC in the camera window."""
+        self._cam_set_state(mode, scanning=False)
+        self._scan_focus_active = True
+        self._scan_focus_tick()
+        if mode == "sales" and self._cam_status_sale:
+            self._cam_status_sale.configure(text="Scan cancelled",
+                                             text_color=C_TEXT_DIM)
+        elif mode == "restock" and self._cam_status_restock:
+            self._cam_status_restock.configure(text="Scan cancelled",
+                                                text_color=C_TEXT_DIM)
+
+    def _camera_error(self, msg: str, mode: str):
+        """Called when the camera fails to open or crashes."""
+        self._cam_set_state(mode, scanning=False)
+        self._scan_focus_active = True
+        self._scan_focus_tick()
+        messagebox.showerror(
+            "Camera Error",
+            f"{msg}\n\nTips:\n"
+            "  • Make sure a webcam is connected and not used by another app.\n"
+            "  • Try closing Teams/Zoom/Skype before scanning.\n"
+            "  • If the problem persists, use a HID barcode scanner instead.",
+            parent=self,
+        )
+
 
     # ==================================================================
     #  RESTOCK VIEW
@@ -1107,8 +1679,31 @@ class InventoryApp(ctk.CTk):
                                           height=52, font=(FONT, 18, "bold"),
                                           fg_color=C_CARD2, border_color=C_WARNING,
                                           border_width=1, justify="center")
-        self._restock_entry.pack(fill="x", padx=24, pady=(0, 18))
+        self._restock_entry.pack(fill="x", padx=24, pady=(0, 10))
         self._restock_entry.bind("<Return>", self._on_restock_scan)
+
+        # Camera scan button row
+        rcam_row = ctk.CTkFrame(card, fg_color="transparent")
+        rcam_row.pack(fill="x", padx=24, pady=(0, 18))
+        self._cam_btn_restock = ctk.CTkButton(
+            rcam_row,
+            text="📷  Scan with Camera",
+            height=38,
+            corner_radius=8,
+            font=(FONT, 12, "bold"),
+            fg_color="#1a3a5c" if CAMERA_AVAILABLE else C_CARD2,
+            hover_color=C_ACCENT if CAMERA_AVAILABLE else C_CARD2,
+            text_color=C_TEXT if CAMERA_AVAILABLE else C_TEXT_DIM,
+            command=(lambda: self._start_camera_scan("restock")) if CAMERA_AVAILABLE
+                    else lambda: messagebox.showinfo(
+                        "Not Available",
+                        "opencv-python and pyzbar must be installed."),
+        )
+        self._cam_btn_restock.pack(side="left", fill="x", expand=True, padx=(0, 8))
+        self._cam_status_restock = ctk.CTkLabel(
+            rcam_row, text="" if CAMERA_AVAILABLE else "opencv not installed",
+            font=(FONT, 10), text_color=C_TEXT_DIM, width=130, anchor="w")
+        self._cam_status_restock.pack(side="left")
 
         res = ctk.CTkFrame(frame, fg_color=C_CARD, corner_radius=16,
                            border_width=1, border_color=C_BORDER)
@@ -1140,7 +1735,7 @@ class InventoryApp(ctk.CTk):
                    f"+{entry['quantity_added']} → {entry['remaining_qty']} in stock")
             self._restock_log_add_row(ts, msg, C_SUCCESS, prepend=False)
 
-    def _on_restock_scan(self, _=None):
+    def _on_restock_scan(self, _=None, barcode: str | None = None):
         """
         Restock scan handler — optimised for Barcode2win / HID.
 
@@ -1150,8 +1745,11 @@ class InventoryApp(ctk.CTk):
           3. Open centred CTkToplevel with auto-focused qty field.
           4. On confirm: update_stock(bc, +qty), blue flash, log row.
         """
-        raw = self._restock_entry.get()
-        self._restock_entry.delete(0, "end")       # Auto-clear
+        if barcode is None:
+            raw = self._restock_entry.get()
+            self._restock_entry.delete(0, "end")   # Auto-clear
+        else:
+            raw = barcode
 
         bc = _sanitise_barcode(raw)
         if len(bc) < 2:
