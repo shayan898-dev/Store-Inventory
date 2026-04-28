@@ -174,6 +174,48 @@ class FlashEntry(ctk.CTkEntry):
 # Dialogs
 # ---------------------------------------------------------------------------
 
+class ScannerChoiceDialog(ctk.CTkToplevel):
+    """Popup to ask the user which scanning method to use."""
+    def __init__(self, parent, on_camera, on_b2w):
+        super().__init__(parent)
+        self.title("Select Scanner")
+        self.geometry("320x220")
+        self.resizable(False, False)
+        self.configure(fg_color=C_CARD)
+        
+        # Center the dialog on the parent
+        self.update_idletasks()
+        try:
+            x = parent.winfo_x() + (parent.winfo_width() // 2) - 160
+            y = parent.winfo_y() + (parent.winfo_height() // 2) - 110
+            self.geometry(f"+{x}+{y}")
+        except Exception:
+            pass
+
+        self.grab_set()
+        self.focus_set()
+
+        self.on_camera = on_camera
+        self.on_b2w = on_b2w
+
+        ctk.CTkLabel(self, text="How would you like to scan?", font=(FONT, 14, "bold"), text_color=C_TEXT).pack(pady=(20, 16))
+
+        btn_cam = ctk.CTkButton(self, text="📷  Laptop Camera", height=42, font=(FONT, 13, "bold"), fg_color="#1a3a5c", hover_color=C_ACCENT, command=self._choose_cam)
+        btn_cam.pack(fill="x", padx=30, pady=(0, 12))
+
+        btn_b2w = ctk.CTkButton(self, text="📱  Barcode2win App", height=42, font=(FONT, 13, "bold"), fg_color=C_CARD2, hover_color=C_BORDER, text_color=C_TEXT, command=self._choose_b2w)
+        btn_b2w.pack(fill="x", padx=30, pady=0)
+
+    def _choose_cam(self):
+        self.grab_release()
+        self.destroy()
+        self.on_camera()
+
+    def _choose_b2w(self):
+        self.grab_release()
+        self.destroy()
+        self.on_b2w()
+
 class ProductDialog(ctk.CTkToplevel):
     """
     Modal dialog for Add / Edit product.
@@ -290,6 +332,23 @@ class ProductDialog(ctk.CTkToplevel):
     # ----------------------------------------------------------------
 
     def _scan_barcode(self):
+        """Asks the user which scanner to use."""
+        ScannerChoiceDialog(
+            parent=self,
+            on_camera=self._start_camera_scan,
+            on_b2w=self._scan_b2w
+        )
+
+    def _scan_b2w(self):
+        """Prepares the dialog for Barcode2win app input."""
+        if self._scanner and self._scanner.is_running():
+            self._scanner.stop()
+            self._scan_done()
+        self.e_barcode.focus_set()
+        self.e_barcode.configure(border_color=C_SUCCESS)
+        self.after(500, lambda: self.e_barcode.configure(border_color=C_BORDER))
+
+    def _start_camera_scan(self):
         """Opens the camera scanner, fills barcode field on success."""
         if not CAMERA_AVAILABLE:
             from tkinter import messagebox
@@ -427,6 +486,62 @@ class RestockQtyDialog(ctk.CTkToplevel):
         except (ValueError, AssertionError):
             messagebox.showerror("Invalid", "Enter a positive whole number.", parent=self)
 
+class SaleQtyDialog(ctk.CTkToplevel):
+    """Small modal asking how many units to add to the bill."""
+
+    def __init__(self, parent, product: dict, max_qty: int):
+        super().__init__(parent)
+        self.result = None
+        self.title("Add to Bill")
+        self.geometry("320x230")
+        self.resizable(False, False)
+        self.configure(fg_color=C_CARD)
+        
+        self.update_idletasks()
+        try:
+            x = parent.winfo_x() + (parent.winfo_width() // 2) - 160
+            y = parent.winfo_y() + (parent.winfo_height() // 2) - 115
+            self.geometry(f"+{x}+{y}")
+        except Exception:
+            pass
+
+        self.grab_set()
+        self.focus_set()
+        self.max_qty = max_qty
+
+        ctk.CTkLabel(self, text="🛒  Add to Bill", font=(FONT, 16, "bold")).pack(pady=(24, 4))
+        ctk.CTkLabel(self, text=product["name"], font=(FONT, 13),
+                     text_color=C_TEXT_DIM).pack(pady=(0, 14))
+
+        frm = ctk.CTkFrame(self, fg_color="transparent")
+        frm.pack(fill="x", padx=32)
+        ctk.CTkLabel(frm, text=f"Quantity (max {max_qty}):", font=(FONT, 12),
+                     text_color=C_TEXT_DIM, anchor="w").pack(fill="x")
+        self.qty_entry = ctk.CTkEntry(frm, height=40, font=(FONT, 16, "bold"),
+                                       fg_color=C_CARD2, border_color=C_ACCENT,
+                                       justify="center")
+        self.qty_entry.insert(0, "1")
+        self.qty_entry.pack(fill="x", pady=4)
+        self.qty_entry.focus_set()
+        self.qty_entry.select_range(0, "end")
+
+        ctk.CTkButton(self, text="✔  Add", fg_color=C_SUCCESS,
+                      hover_color="#2EA043", font=(FONT, 13, "bold"),
+                      command=self._confirm).pack(pady=16, padx=32, fill="x")
+        self.bind("<Return>", lambda e: self._confirm())
+
+    def _confirm(self):
+        try:
+            qty = int(self.qty_entry.get().strip())
+            assert qty > 0
+            if qty > self.max_qty:
+                messagebox.showerror("Insufficient Stock", f"Only {self.max_qty} units available.", parent=self)
+                return
+            self.result = qty
+            self.destroy()
+        except (ValueError, AssertionError):
+            messagebox.showerror("Invalid", "Enter a positive whole number.", parent=self)
+
 
 # ---------------------------------------------------------------------------
 # Main application
@@ -472,6 +587,7 @@ class InventoryApp(ctk.CTk):
         self._cam_status_sale: ctk.CTkLabel | None  = None
         self._cam_btn_restock: ctk.CTkButton | None = None
         self._cam_status_restock: ctk.CTkLabel | None = None
+        self._current_bill: dict = {}
 
         self._build_sidebar()
         self._build_content()
@@ -1231,22 +1347,18 @@ class InventoryApp(ctk.CTk):
         cam_row.pack(fill="x", padx=20, pady=(0, 16))
         self._cam_btn_sale = ctk.CTkButton(
             cam_row,
-            text="📷  Scan with Camera",
+            text="📷  Scan Barcode",
             height=38,
             corner_radius=8,
             font=(FONT, 12, "bold"),
-            fg_color="#1a3a5c" if CAMERA_AVAILABLE else C_CARD2,
-            hover_color=C_ACCENT if CAMERA_AVAILABLE else C_CARD2,
-            text_color=C_TEXT if CAMERA_AVAILABLE else C_TEXT_DIM,
-            command=(lambda: self._start_camera_scan("sales")) if CAMERA_AVAILABLE
-                    else lambda: messagebox.showinfo(
-                        "Not Available",
-                        "opencv-python and pyzbar must be installed.\n"
-                        "Run:  pip install opencv-python pyzbar"),
+            fg_color="#1a3a5c",
+            hover_color=C_ACCENT,
+            text_color=C_TEXT,
+            command=lambda: self._ask_scanner("sales")
         )
         self._cam_btn_sale.pack(side="left", fill="x", expand=True, padx=(0, 8))
         self._cam_status_sale = ctk.CTkLabel(
-            cam_row, text="" if CAMERA_AVAILABLE else "opencv not installed",
+            cam_row, text="",
             font=(FONT, 10), text_color=C_TEXT_DIM, width=130, anchor="w")
         self._cam_status_sale.pack(side="left")
 
@@ -1279,97 +1391,81 @@ class InventoryApp(ctk.CTk):
 
         log_hdr = ctk.CTkFrame(right, fg_color=C_CARD2, corner_radius=0)
         log_hdr.pack(fill="x")
-        ctk.CTkLabel(log_hdr, text="Recent Sales",
+        ctk.CTkLabel(log_hdr, text="Current Bill",
                      font=(FONT, 13, "bold"), text_color=C_TEXT).pack(
             side="left", padx=16, pady=12)
-        self._sale_count_lbl = ctk.CTkLabel(log_hdr, text="0 scans",
+        self._sale_count_lbl = ctk.CTkLabel(log_hdr, text="0 items",
                                              font=(FONT, 11), text_color=C_TEXT_DIM)
         self._sale_count_lbl.pack(side="right", padx=16)
 
         # Column header row
         col_hdr = ctk.CTkFrame(right, fg_color="#161B22")
         col_hdr.pack(fill="x")
-        ctk.CTkLabel(col_hdr, text="Time",    font=(FONT, 10, "bold"),
-                     text_color=C_TEXT_DIM, width=70,  anchor="w").pack(
+        ctk.CTkLabel(col_hdr, text="Qty",    font=(FONT, 10, "bold"),
+                     text_color=C_TEXT_DIM, width=40,  anchor="center").pack(
             side="left", padx=(12, 4), pady=5)
-        ctk.CTkLabel(col_hdr, text="Barcode", font=(FONT, 10, "bold"),
-                     text_color=C_TEXT_DIM, width=130, anchor="w").pack(
-            side="left", padx=(0, 4))
-        ctk.CTkLabel(col_hdr, text="Status",  font=(FONT, 10, "bold"),
-                     text_color=C_TEXT_DIM, width=90,  anchor="e").pack(
-            side="right", padx=(4, 12))
-        ctk.CTkLabel(col_hdr, text="Product", font=(FONT, 10, "bold"),
+        ctk.CTkLabel(col_hdr, text="Name", font=(FONT, 10, "bold"),
                      text_color=C_TEXT_DIM, anchor="w").pack(
             side="left", fill="x", expand=True, padx=(0, 4))
+        ctk.CTkLabel(col_hdr, text="Subtotal",  font=(FONT, 10, "bold"),
+                     text_color=C_TEXT_DIM, width=90,  anchor="e").pack(
+            side="right", padx=(4, 12))
+        ctk.CTkLabel(col_hdr, text="Price", font=(FONT, 10, "bold"),
+                     text_color=C_TEXT_DIM, width=80, anchor="e").pack(
+            side="right", padx=(0, 4))
 
-        # Scrollable log
+        # Scrollable bill
         self._sale_log = ctk.CTkScrollableFrame(right, fg_color="transparent",
                                                   corner_radius=0)
         self._sale_log.pack(fill="both", expand=True)
         self._sale_log_rows: list      = []
         self._sale_session_count: int  = 0
+        
+        # Footer
+        footer = ctk.CTkFrame(right, fg_color=C_CARD2, corner_radius=0)
+        footer.pack(fill="x", side="bottom")
+        
+        self._bill_total_lbl = ctk.CTkLabel(footer, text="Total Price: PKR 0.00",
+                                            font=(FONT, 18, "bold"), text_color=C_ACCENT)
+        self._bill_total_lbl.pack(side="left", padx=16, pady=16)
+        
+        ctk.CTkButton(footer, text="Confirm Bill", font=(FONT, 13, "bold"),
+                      fg_color=C_SUCCESS, hover_color="#2EA043", width=120, height=40,
+                      command=self._confirm_bill).pack(side="right", padx=(0, 16), pady=16)
+                      
+        ctk.CTkButton(footer, text="Clear Bill", font=(FONT, 13, "bold"),
+                      fg_color="#3B1A1A", hover_color=C_DANGER, width=100, height=40,
+                      command=self._clear_bill).pack(side="right", padx=16, pady=16)
 
         return frame
 
     # ── Ghost Focus Loop ──────────────────────────────────────────────
 
     def _sales_load_log(self):
-        """Reload persistent log from SQLite when the Sales view is opened."""
+        """Reset the Current Bill when the Sales view is opened."""
         if not hasattr(self, "_sale_log"):
             return
-        for w in self._sale_log_rows:
-            w.destroy()
-        self._sale_log_rows.clear()
-        self._sale_session_count = 0
-
-        for entry in self.db.get_recent_sales(limit=20):
-            t   = entry["timestamp"].split(" ")[-1][:8]
-            rem = entry["remaining_qty"]
-            if rem == 0:
-                status, col = "OUT OF STOCK", C_DANGER
-            elif rem < 5:
-                status, col = "LOW STOCK",    C_WARNING
-            else:
-                status, col = "SOLD",         C_SUCCESS
-            self._sale_log_insert_row(t, entry["barcode"], entry["name"], status, col)
-
-        total = len(self.db.get_recent_sales(limit=50))
-        if hasattr(self, "_sale_count_lbl"):
-            self._sale_count_lbl.configure(text=f"{total} logged")
+        self._clear_bill()
 
     # ── Core sale processor ───────────────────────────────────────────
 
     def _process_sale(self, _=None, barcode: str | None = None):
-        """
-        High-speed sale processor — optimised for Barcode2win / HID scanners.
-
-        Flow:
-          1. Read field → sanitise → clear immediately (ready for next scan).
-          2. Guard against garbled / empty inputs (< 2 printable chars).
-          3. update_stock(bc, -1)  →  'ok' | 'not_found' | 'out_of_stock'.
-          4. Trigger correct feedback path for each outcome.
-        """
         if barcode is None:
             raw = self._sale_entry.get()
-            self._sale_entry.delete(0, "end")      # Auto-clear — field ready instantly
+            self._sale_entry.delete(0, "end")
         else:
             raw = barcode
 
         bc = _sanitise_barcode(raw)
-
-        # ── Guard: garbled / empty scan ───────────────────────────────
         if len(bc) < 2:
             return
 
-        # ── Dismiss any previous "not found" shortcut ─────────────────
         self._dismiss_notfound_shortcut()
 
-        # ── Thread-safe DB call ───────────────────────────────────────
-        status, product = self.db.update_stock(bc, -1)
+        product = self.db.find_by_barcode(bc)
 
-        # ─────────────────────────────────────────────────────────────
-        if status == "not_found":
-            self._sale_entry.flash_custom("#dc3545", 300)  # Red 300ms
+        if not product:
+            self._sale_entry.flash_custom("#dc3545", 300)
             play_beep(False)
             self._pc_update_card(
                 status="Product Not Found",
@@ -1380,63 +1476,70 @@ class InventoryApp(ctk.CTk):
                 name_color=C_TEXT_DIM,
                 stock_color=C_TEXT_DIM,
             )
-            self._sale_log_insert_row(ts_now(), bc, "—", "NOT FOUND", C_DANGER)
-            self._update_scan_count()
-            # Shortcut button — lets operator jump straight to Add Product
             self._show_notfound_shortcut(bc)
             return
 
-        # ─────────────────────────────────────────────────────────────
-        if status == "out_of_stock":
-            self._sale_entry.flash_custom("#dc3545", 300)  # Red 300ms
+        # Check if adding one more would exceed stock
+        current_in_bill = self._current_bill.get(bc, {}).get("qty", 0)
+        remaining = product["quantity"] - current_in_bill
+
+        if remaining <= 0:
+            self._sale_entry.flash_custom("#dc3545", 300)
             play_beep(False)
             self._pc_update_card(
                 status="OUT OF STOCK",
                 name=product["name"],
                 price=format_price(product["price"]),
-                stock="0 units remaining — cannot sell",
+                stock=f"Only {product['quantity']} in stock",
                 status_color=C_DANGER,
                 stock_color=C_DANGER,
             )
-            # Toast so operator sees it without looking at the card
-            self._toast(f"⚠  OUT OF STOCK:  {product['name']}", ms=3000)
-            self._sale_log_insert_row(ts_now(), bc, product["name"],
-                                       "OUT OF STOCK", C_DANGER)
-            self._update_scan_count()
+            self._toast(f"⚠  INSUFFICIENT STOCK:  {product['name']}", ms=3000)
+            self.after(50, self._sale_entry.focus_set)
             return
 
-        # ─────────────────────────────────────────────────────────────
-        # status == "ok"  →  successful sale
-        remaining = product["quantity"]
-        self.db.log_sale(bc, product["name"], 1, remaining)
+        dlg = SaleQtyDialog(self, product, remaining)
+        self.wait_window(dlg)
+        
+        self.after(50, self._sale_entry.focus_set)
+        
+        if not dlg.result:
+            return
+            
+        qty_to_add = dlg.result
 
-        self._sale_entry.flash_custom("#28a745", 300)    # Green 300ms
-        play_beep(True)                                   # 1kHz 150ms
+        # Add to bill
+        if bc not in self._current_bill:
+            self._current_bill[bc] = {
+                "name": product["name"],
+                "price": product["price"],
+                "qty": 0,
+                "stock": product["quantity"]
+            }
+        self._current_bill[bc]["qty"] += qty_to_add
+        
+        self._sale_entry.flash_custom("#28a745", 300)
+        play_beep(True)
 
-        if remaining == 0:
-            stock_txt, stock_col, log_st, log_col = (
-                "0 left — NOW OUT OF STOCK", C_DANGER, "LAST UNIT", C_DANGER)
-        elif remaining < 5:
-            stock_txt, stock_col, log_st, log_col = (
-                f"{remaining} units left  ⚠  Low Stock", C_WARNING, "LOW STOCK", C_WARNING)
+        new_remaining = remaining - qty_to_add
+        
+        if new_remaining == 0:
+            stock_txt, stock_col = "0 left — NOW OUT OF STOCK", C_DANGER
+        elif new_remaining < 5:
+            stock_txt, stock_col = f"{new_remaining} units left  ⚠  Low Stock", C_WARNING
         else:
-            stock_txt, stock_col, log_st, log_col = (
-                f"{remaining} units remaining", C_SUCCESS, "SOLD", C_SUCCESS)
+            stock_txt, stock_col = f"{new_remaining} units remaining", C_SUCCESS
 
         self._pc_update_card(
-            status="Last Scanned",
+            status="Added to Bill",
             name=product["name"],
             price=format_price(product["price"]),
             stock=stock_txt,
-            status_color=C_TEXT_DIM,
+            status_color=C_SUCCESS,
             stock_color=stock_col,
         )
-        self._sale_log_insert_row(ts_now(), bc, product["name"], log_st, log_col)
-        self._update_scan_count()
-
-        if "inventory" in self._views:
-            self._inv_refresh(self._search_var.get()
-                              if hasattr(self, "_search_var") else "")
+        
+        self._refresh_bill_ui()
 
     # ── "Not Found" shortcut button ───────────────────────────────────
 
@@ -1506,49 +1609,121 @@ class InventoryApp(ctk.CTk):
 
     # ── Transaction log ───────────────────────────────────────────────
 
-    def _sale_log_insert_row(self, time_str: str, barcode: str,
-                              name: str, status: str, status_color: str):
-        """Inserts a new row at the TOP of the right-panel transaction log."""
-        row = ctk.CTkFrame(self._sale_log, fg_color=C_CARD2, corner_radius=7)
-        if self._sale_log_rows:
-            row.pack(fill="x", padx=6, pady=(3, 0), before=self._sale_log_rows[0])
-        else:
-            row.pack(fill="x", padx=6, pady=(3, 0))
+    def _refresh_bill_ui(self):
+        for w in self._sale_log_rows:
+            w.destroy()
+        self._sale_log_rows.clear()
+        
+        total_price = 0.0
+        total_items = 0
+        
+        for bc, item in self._current_bill.items():
+            subtotal = item["qty"] * item["price"]
+            total_price += subtotal
+            total_items += item["qty"]
+            self._sale_log_insert_row(
+                qty=item["qty"],
+                name=item["name"],
+                price=format_price(item["price"]),
+                subtotal=format_price(subtotal)
+            )
+            
+        self._bill_total_lbl.configure(text=f"Total Price: {format_price(total_price)}")
+        self._sale_count_lbl.configure(text=f"{total_items} items")
+        self._sale_session_count = total_items
 
-        # Time
-        ctk.CTkLabel(row, text=time_str, font=(FONT, 11),
-                     text_color=C_TEXT_DIM, width=70, anchor="w").pack(
+    def _sale_log_insert_row(self, qty: int, name: str, price: str, subtotal: str):
+        row = ctk.CTkFrame(self._sale_log, fg_color=C_CARD2, corner_radius=7)
+        row.pack(fill="x", padx=6, pady=(3, 0))
+
+        # Qty
+        ctk.CTkLabel(row, text=f"{qty}x", font=(FONT, 12, "bold"),
+                     text_color=C_ACCENT, width=40, anchor="center").pack(
             side="left", padx=(10, 4), pady=8)
-        # Barcode
-        ctk.CTkLabel(row, text=barcode[:15], font=(FONT, 11),
-                     text_color=C_TEXT_DIM, width=130, anchor="w").pack(
-            side="left", padx=(0, 4))
-        # Status badge (right-aligned)
-        badge_fg = "#111111" if status_color in (C_SUCCESS, C_WARNING) else C_TEXT
-        ctk.CTkLabel(row, text=f"  {status}  ", font=(FONT, 10, "bold"),
-                     text_color=badge_fg, fg_color=status_color,
-                     corner_radius=5).pack(side="right", padx=(4, 10), pady=8)
-        # Product name
+        # Name
         ctk.CTkLabel(row, text=name, font=(FONT, 12),
                      text_color=C_TEXT, anchor="w").pack(
             side="left", fill="x", expand=True, padx=(0, 4))
+        # Subtotal
+        ctk.CTkLabel(row, text=subtotal, font=(FONT, 12, "bold"),
+                     text_color=C_TEXT, width=90, anchor="e").pack(
+            side="right", padx=(4, 12), pady=8)
+        # Price
+        ctk.CTkLabel(row, text=price, font=(FONT, 11),
+                     text_color=C_TEXT_DIM, width=80, anchor="e").pack(
+            side="right", padx=(0, 4), pady=8)
 
-        self._sale_log_rows.insert(0, row)
-        if len(self._sale_log_rows) > 30:
-            self._sale_log_rows.pop().destroy()
+        self._sale_log_rows.append(row)
 
-    def _update_scan_count(self):
-        self._sale_session_count += 1
-        if hasattr(self, "_sale_count_lbl"):
-            self._sale_count_lbl.configure(
-                text=f"{self._sale_session_count} scans this session")
+    def _clear_bill(self):
+        self._current_bill.clear()
+        self._refresh_bill_ui()
+        self._pc_update_card(
+            status="Scan a product to begin",
+            name="—",
+            price="",
+            stock="",
+            status_color=C_TEXT_DIM,
+            name_color=C_TEXT,
+            stock_color=C_TEXT_DIM,
+        )
+
+    def _confirm_bill(self):
+        if not self._current_bill:
+            self._toast("⚠  Bill is empty!", ms=2000)
+            return
+            
+        for bc, item in self._current_bill.items():
+            status, product = self.db.update_stock(bc, -item["qty"])
+            if status == "ok":
+                self.db.log_sale(bc, product["name"], item["qty"], product["quantity"])
+                
+        self._toast(f"✅  Bill Confirmed: {self._sale_session_count} items sold.")
+        play_beep(True)
+        self._clear_bill()
+        
+        if "inventory" in self._views:
+            self._inv_refresh(self._search_var.get()
+                              if hasattr(self, "_search_var") else "")
 
     # Alias kept so nothing else breaks
     def _on_sale_scan(self, event=None):
         self._process_sale(event)
 
     # ==================================================================
-    #  CAMERA SCANNER  (OpenCV + pyzbar)
+    #  SCANNER SELECTION
+    # ==================================================================
+
+    def _ask_scanner(self, mode: str):
+        """Pops up a dialog to choose between Laptop Camera and Barcode2win App."""
+        ScannerChoiceDialog(
+            parent=self,
+            on_camera=lambda: self._start_camera_scan(mode),
+            on_b2w=lambda: self._start_b2w_scan(mode)
+        )
+
+    def _start_b2w_scan(self, mode: str):
+        """Prepares the UI for Barcode2win input."""
+        if self._camera_scanner and self._camera_scanner.is_running():
+            self._camera_scanner.stop()
+            self._cam_set_state(mode, scanning=False)
+
+        self._scan_focus_active = True
+        self._scan_focus_tick()
+
+        if mode == "sales":
+            self._sale_entry.focus_set()
+            if self._cam_status_sale:
+                self._cam_status_sale.configure(text="Ready for Barcode2win...", text_color=C_SUCCESS)
+                self.after(4000, lambda: self._cam_status_sale.configure(text=""))
+        elif mode == "restock":
+            self._restock_entry.focus_set()
+            if self._cam_status_restock:
+                self._cam_status_restock.configure(text="Ready for Barcode2win...", text_color=C_SUCCESS)
+                self.after(4000, lambda: self._cam_status_restock.configure(text=""))
+
+    # ==================================================================
+    #  CAMERA SCANNER  (OpenCV + zxing-cpp)
     # ==================================================================
 
     def _start_camera_scan(self, mode: str):
@@ -1687,21 +1862,18 @@ class InventoryApp(ctk.CTk):
         rcam_row.pack(fill="x", padx=24, pady=(0, 18))
         self._cam_btn_restock = ctk.CTkButton(
             rcam_row,
-            text="📷  Scan with Camera",
+            text="📷  Scan Barcode",
             height=38,
             corner_radius=8,
             font=(FONT, 12, "bold"),
-            fg_color="#1a3a5c" if CAMERA_AVAILABLE else C_CARD2,
-            hover_color=C_ACCENT if CAMERA_AVAILABLE else C_CARD2,
-            text_color=C_TEXT if CAMERA_AVAILABLE else C_TEXT_DIM,
-            command=(lambda: self._start_camera_scan("restock")) if CAMERA_AVAILABLE
-                    else lambda: messagebox.showinfo(
-                        "Not Available",
-                        "opencv-python and pyzbar must be installed."),
+            fg_color="#1a3a5c",
+            hover_color=C_ACCENT,
+            text_color=C_TEXT,
+            command=lambda: self._ask_scanner("restock")
         )
         self._cam_btn_restock.pack(side="left", fill="x", expand=True, padx=(0, 8))
         self._cam_status_restock = ctk.CTkLabel(
-            rcam_row, text="" if CAMERA_AVAILABLE else "opencv not installed",
+            rcam_row, text="",
             font=(FONT, 10), text_color=C_TEXT_DIM, width=130, anchor="w")
         self._cam_status_restock.pack(side="left")
 
