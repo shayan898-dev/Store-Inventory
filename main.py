@@ -26,13 +26,6 @@ import qrcode
 
 from database_manager import DatabaseManager
 
-# Camera scanner (optional — gracefully disabled if cv2/pyzbar not installed)
-try:
-    from barcode_scanner import BarcodeScanner as _BarcodeScanner
-    CAMERA_AVAILABLE = True
-except ImportError:
-    CAMERA_AVAILABLE = False
-    _BarcodeScanner  = None
 
 # ---------------------------------------------------------------------------
 # Global theme setup
@@ -174,47 +167,7 @@ class FlashEntry(ctk.CTkEntry):
 # Dialogs
 # ---------------------------------------------------------------------------
 
-class ScannerChoiceDialog(ctk.CTkToplevel):
-    """Popup to ask the user which scanning method to use."""
-    def __init__(self, parent, on_camera, on_b2w):
-        super().__init__(parent)
-        self.title("Select Scanner")
-        self.geometry("320x220")
-        self.resizable(False, False)
-        self.configure(fg_color=C_CARD)
-        
-        # Center the dialog on the parent
-        self.update_idletasks()
-        try:
-            x = parent.winfo_x() + (parent.winfo_width() // 2) - 160
-            y = parent.winfo_y() + (parent.winfo_height() // 2) - 110
-            self.geometry(f"+{x}+{y}")
-        except Exception:
-            pass
 
-        self.grab_set()
-        self.focus_set()
-
-        self.on_camera = on_camera
-        self.on_b2w = on_b2w
-
-        ctk.CTkLabel(self, text="How would you like to scan?", font=(FONT, 14, "bold"), text_color=C_TEXT).pack(pady=(20, 16))
-
-        btn_cam = ctk.CTkButton(self, text="📷  Laptop Camera", height=42, font=(FONT, 13, "bold"), fg_color="#1a3a5c", hover_color=C_ACCENT, command=self._choose_cam)
-        btn_cam.pack(fill="x", padx=30, pady=(0, 12))
-
-        btn_b2w = ctk.CTkButton(self, text="📱  Barcode2win App", height=42, font=(FONT, 13, "bold"), fg_color=C_CARD2, hover_color=C_BORDER, text_color=C_TEXT, command=self._choose_b2w)
-        btn_b2w.pack(fill="x", padx=30, pady=0)
-
-    def _choose_cam(self):
-        self.grab_release()
-        self.destroy()
-        self.on_camera()
-
-    def _choose_b2w(self):
-        self.grab_release()
-        self.destroy()
-        self.on_b2w()
 
 class ProductDialog(ctk.CTkToplevel):
     """
@@ -253,20 +206,6 @@ class ProductDialog(ctk.CTkToplevel):
                                        fg_color=C_CARD2, border_color=C_BORDER)
         self.e_barcode.pack(side="left", fill="x", expand=True, padx=(0, 8))
 
-        self._scan_btn = ctk.CTkButton(
-            bc_row,
-            text="📷 Scan",
-            width=80,
-            height=38,
-            corner_radius=8,
-            font=(FONT, 12, "bold"),
-            fg_color="#1a3a5c" if CAMERA_AVAILABLE else C_CARD2,
-            hover_color=C_ACCENT if CAMERA_AVAILABLE else C_CARD2,
-            text_color=C_TEXT if CAMERA_AVAILABLE else C_TEXT_DIM,
-            command=self._scan_barcode,
-        )
-        self._scan_btn.pack(side="left")
-
         # ---- Name ----
         _lbl("Product Name *")
         self.e_name = ctk.CTkEntry(form, height=38, font=(FONT, 13),
@@ -301,8 +240,6 @@ class ProductDialog(ctk.CTkToplevel):
         if product:
             self.e_barcode.insert(0, product.get("barcode", ""))
             self.e_barcode.configure(state="disabled")   # PK — immutable
-            self._scan_btn.configure(state="disabled",   # No scan needed in edit
-                                     fg_color=C_CARD2, text_color=C_TEXT_DIM)
             self.e_name.insert(0, product.get("name", ""))
             cat = product.get("category", "General")
             if cat not in cats:
@@ -320,100 +257,16 @@ class ProductDialog(ctk.CTkToplevel):
         ctk.CTkButton(btn_row, text="Save", fg_color=C_ACCENT,
                       hover_color=C_ACCENT_HVR, command=self._save, width=120).pack(side="right")
 
-        self._scanner = None   # BarcodeScanner instance (if camera opened)
         if not self._is_edit:
             self.e_barcode.focus_set()
         self.bind("<Return>", lambda e: self._save())
-        # Clean up camera on close
-        self.protocol("WM_DELETE_WINDOW", self._on_close)
 
     # ----------------------------------------------------------------
-    # Camera scanner
-    # ----------------------------------------------------------------
-
-    def _scan_barcode(self):
-        """Asks the user which scanner to use."""
-        ScannerChoiceDialog(
-            parent=self,
-            on_camera=self._start_camera_scan,
-            on_b2w=self._scan_b2w
-        )
 
     def _scan_b2w(self):
-        """Prepares the dialog for Barcode2win app input."""
-        if self._scanner and self._scanner.is_running():
-            self._scanner.stop()
-            self._scan_done()
         self.e_barcode.focus_set()
         self.e_barcode.configure(border_color=C_SUCCESS)
         self.after(500, lambda: self.e_barcode.configure(border_color=C_BORDER))
-
-    def _start_camera_scan(self):
-        """Opens the camera scanner, fills barcode field on success."""
-        if not CAMERA_AVAILABLE:
-            from tkinter import messagebox
-            messagebox.showinfo(
-                "Not Available",
-                "opencv-python and zxing-cpp must be installed.\n"
-                "Run:  pip install opencv-python zxing-cpp",
-                parent=self,
-            )
-            return
-
-        # Stop any previous scan session
-        if self._scanner and self._scanner.is_running():
-            self._scanner.stop()
-            return
-
-        self._scanner = _BarcodeScanner(camera_index=0)
-        self._scan_btn.configure(text="⏹ Stop", fg_color="#5c1a1a",
-                                  hover_color=C_DANGER)
-
-        self._scanner.scan_async(
-            on_found  = self._barcode_found,
-            on_cancel = self._scan_done,
-            on_error  = self._scan_error,
-            app       = self,
-        )
-
-    def _barcode_found(self, code: str):
-        """Called (main thread) when camera successfully decodes a barcode."""
-        self._scan_done()
-        # Fill the barcode field
-        self.e_barcode.configure(state="normal")
-        self.e_barcode.delete(0, "end")
-        self.e_barcode.insert(0, code)
-        # Move focus to Name so operator can continue typing
-        self.e_name.focus_set()
-
-    def _scan_done(self):
-        """Reset scan button to idle state."""
-        try:
-            self._scan_btn.configure(
-                text="📷 Scan",
-                fg_color="#1a3a5c" if CAMERA_AVAILABLE else C_CARD2,
-                hover_color=C_ACCENT if CAMERA_AVAILABLE else C_CARD2,
-            )
-        except Exception:
-            pass
-
-    def _scan_error(self, msg: str):
-        """Show camera error without crashing the dialog."""
-        self._scan_done()
-        from tkinter import messagebox
-        messagebox.showerror(
-            "Camera Error",
-            f"{msg}\n\nTip: Close Teams/Zoom/Skype and try again.",
-            parent=self,
-        )
-
-    def _on_close(self):
-        """Ensure camera is released before dialog closes."""
-        if self._scanner and self._scanner.is_running():
-            self._scanner.stop()
-        self.destroy()
-
-    # ----------------------------------------------------------------
 
     def _save(self):
         barcode   = self.e_barcode.get().strip()
@@ -479,7 +332,15 @@ class RestockQtyDialog(ctk.CTkToplevel):
 
     def _confirm(self):
         try:
-            qty = int(self.qty_entry.get().strip())
+            qty_str = self.qty_entry.get().strip()
+            if len(qty_str) > 4:
+                messagebox.showerror("Invalid", "Scanning is paused until quantity is set.", parent=self)
+                self.qty_entry.delete(0, "end")
+                self.qty_entry.insert(0, "1")
+                self.qty_entry.focus_set()
+                self.qty_entry.select_range(0, "end")
+                return
+            qty = int(qty_str)
             assert qty > 0
             self.result = qty
             self.destroy()
@@ -532,7 +393,15 @@ class SaleQtyDialog(ctk.CTkToplevel):
 
     def _confirm(self):
         try:
-            qty = int(self.qty_entry.get().strip())
+            qty_str = self.qty_entry.get().strip()
+            if len(qty_str) > 4:
+                messagebox.showerror("Invalid", "Scanning is paused until quantity is set.", parent=self)
+                self.qty_entry.delete(0, "end")
+                self.qty_entry.insert(0, "1")
+                self.qty_entry.focus_set()
+                self.qty_entry.select_range(0, "end")
+                return
+            qty = int(qty_str)
             assert qty > 0
             if qty > self.max_qty:
                 messagebox.showerror("Insufficient Stock", f"Only {self.max_qty} units available.", parent=self)
@@ -581,12 +450,6 @@ class InventoryApp(ctk.CTk):
         self._mobile_bridge_host: str = "0.0.0.0"
         self._mobile_local_ip: str = self._get_local_ip()
         self._mobile_qr_image = None
-        # Camera scanner state
-        self._camera_scanner = _BarcodeScanner() if CAMERA_AVAILABLE else None
-        self._cam_btn_sale: ctk.CTkButton | None    = None
-        self._cam_status_sale: ctk.CTkLabel | None  = None
-        self._cam_btn_restock: ctk.CTkButton | None = None
-        self._cam_status_restock: ctk.CTkLabel | None = None
         self._current_bill: dict = {}
 
         self._build_sidebar()
@@ -849,12 +712,35 @@ class InventoryApp(ctk.CTk):
 
     def _handle_mobile_scan(self, barcode: str):
         """Dispatch mobile scans into the active desktop workflow."""
+        grab = self.grab_current()
+        if grab and hasattr(grab, "qty_entry"):
+            self._toast("Scanning is paused until quantity is set.", ms=2200)
+            return
+            
+        if grab and hasattr(grab, "e_barcode") and str(grab.e_barcode.cget("state")) != "disabled":
+            grab.e_barcode.delete(0, "end")
+            grab.e_barcode.insert(0, barcode)
+            grab.e_name.focus_set()
+            return
+
         if self._active_view == "sales":
             self._process_sale(barcode=barcode)
         elif self._active_view == "restock":
             self._on_restock_scan(barcode=barcode)
         else:
             self._toast("Open Sales or Restock mode to accept mobile scans.", ms=2200)
+
+    def _start_b2w_sale(self):
+        self._sale_entry.focus_set()
+        if hasattr(self, "_cam_status_sale") and self._cam_status_sale:
+            self._cam_status_sale.configure(text="Ready for Barcode2win...", text_color=C_SUCCESS)
+            self.after(4000, lambda: self._cam_status_sale.configure(text=""))
+
+    def _start_b2w_restock(self):
+        self._restock_entry.focus_set()
+        if hasattr(self, "_cam_status_restock") and self._cam_status_restock:
+            self._cam_status_restock.configure(text="Ready for Barcode2win...", text_color=C_SUCCESS)
+            self.after(4000, lambda: self._cam_status_restock.configure(text=""))
 
     # ------------------------------------------------------------------
     # Sidebar
@@ -1341,26 +1227,9 @@ class InventoryApp(ctk.CTk):
         )
         self._sale_entry.pack(fill="x", padx=20, pady=(0, 10))
         self._sale_entry.bind("<Return>", self._process_sale)
+        self._sale_entry.bind("<KeyRelease>", self._on_sale_key_release)
 
-        # Camera scan button row
-        cam_row = ctk.CTkFrame(scan_card, fg_color="transparent")
-        cam_row.pack(fill="x", padx=20, pady=(0, 16))
-        self._cam_btn_sale = ctk.CTkButton(
-            cam_row,
-            text="📷  Scan Barcode",
-            height=38,
-            corner_radius=8,
-            font=(FONT, 12, "bold"),
-            fg_color="#1a3a5c",
-            hover_color=C_ACCENT,
-            text_color=C_TEXT,
-            command=lambda: self._ask_scanner("sales")
-        )
-        self._cam_btn_sale.pack(side="left", fill="x", expand=True, padx=(0, 8))
-        self._cam_status_sale = ctk.CTkLabel(
-            cam_row, text="",
-            font=(FONT, 10), text_color=C_TEXT_DIM, width=130, anchor="w")
-        self._cam_status_sale.pack(side="left")
+
 
         # ── Live Product Card ─────────────────────────────────────────
         self._prod_card = ctk.CTkFrame(left, fg_color=C_CARD, corner_radius=14,
@@ -1449,6 +1318,21 @@ class InventoryApp(ctk.CTk):
 
     # ── Core sale processor ───────────────────────────────────────────
 
+    def _on_sale_key_release(self, event):
+        if event.keysym in ("Return", "Tab"):
+            return
+        if hasattr(self, "_sale_debounce") and self._sale_debounce:
+            self.after_cancel(self._sale_debounce)
+        self._sale_debounce = self.after(600, self._check_auto_sale)
+
+    def _check_auto_sale(self):
+        raw = self._sale_entry.get().strip()
+        if len(raw) < 2: return
+        product = self.db.find_by_barcode(raw)
+        if product or len(raw) >= 5:
+            self._sale_entry.delete(0, "end")
+            self._process_sale(barcode=raw)
+
     def _process_sale(self, _=None, barcode: str | None = None):
         if barcode is None:
             raw = self._sale_entry.get()
@@ -1476,7 +1360,7 @@ class InventoryApp(ctk.CTk):
                 name_color=C_TEXT_DIM,
                 stock_color=C_TEXT_DIM,
             )
-            self._show_notfound_shortcut(bc)
+            self._dismiss_notfound_shortcut()
             return
 
         # Check if adding one more would exceed stock
@@ -1690,145 +1574,7 @@ class InventoryApp(ctk.CTk):
     def _on_sale_scan(self, event=None):
         self._process_sale(event)
 
-    # ==================================================================
-    #  SCANNER SELECTION
-    # ==================================================================
 
-    def _ask_scanner(self, mode: str):
-        """Pops up a dialog to choose between Laptop Camera and Barcode2win App."""
-        ScannerChoiceDialog(
-            parent=self,
-            on_camera=lambda: self._start_camera_scan(mode),
-            on_b2w=lambda: self._start_b2w_scan(mode)
-        )
-
-    def _start_b2w_scan(self, mode: str):
-        """Prepares the UI for Barcode2win input."""
-        if self._camera_scanner and self._camera_scanner.is_running():
-            self._camera_scanner.stop()
-            self._cam_set_state(mode, scanning=False)
-
-        self._scan_focus_active = True
-        self._scan_focus_tick()
-
-        if mode == "sales":
-            self._sale_entry.focus_set()
-            if self._cam_status_sale:
-                self._cam_status_sale.configure(text="Ready for Barcode2win...", text_color=C_SUCCESS)
-                self.after(4000, lambda: self._cam_status_sale.configure(text=""))
-        elif mode == "restock":
-            self._restock_entry.focus_set()
-            if self._cam_status_restock:
-                self._cam_status_restock.configure(text="Ready for Barcode2win...", text_color=C_SUCCESS)
-                self.after(4000, lambda: self._cam_status_restock.configure(text=""))
-
-    # ==================================================================
-    #  CAMERA SCANNER  (OpenCV + zxing-cpp)
-    # ==================================================================
-
-    def _start_camera_scan(self, mode: str):
-        """
-        Launches the desktop camera scanner in a background thread.
-
-        Parameters
-        ----------
-        mode : 'sales' | 'restock'
-            Determines which processing pipeline the scanned code is fed into.
-
-        What happens:
-          1. Button text changes to "Scanning..." and focus is suppressed.
-          2. An OpenCV window opens on the desktop showing the live camera feed
-             with a green viewfinder overlay.
-          3. When a barcode is detected (or the user presses Q/ESC):
-             - The OpenCV window closes automatically.
-             - The barcode is routed to _process_sale() or _on_restock_scan().
-          4. Button resets to "Scan with Camera".
-        """
-        if not CAMERA_AVAILABLE:
-            return
-
-        if self._camera_scanner and self._camera_scanner.is_running():
-            self._camera_scanner.stop()
-            return
-
-        # Temporarily pause ghost focus so it doesn't fight the camera window
-        self._scan_focus_active = False
-
-        self._camera_scanner = _BarcodeScanner(camera_index=0)
-
-        # Update button state
-        self._cam_set_state(mode, scanning=True)
-
-        self._camera_scanner.scan_async(
-            on_found  = lambda code: self._camera_found(code, mode),
-            on_cancel = lambda:      self._camera_cancelled(mode),
-            on_error  = lambda msg:  self._camera_error(msg, mode),
-            app       = self,
-        )
-
-    def _cam_set_state(self, mode: str, scanning: bool):
-        """Toggles the camera button text/colour for scanning vs idle states."""
-        if mode == "sales":
-            btn    = self._cam_btn_sale
-            status = self._cam_status_sale
-        else:
-            btn    = self._cam_btn_restock
-            status = self._cam_status_restock
-
-        if btn is None:
-            return
-
-        if scanning:
-            btn.configure(text="⏹  Stop Camera",
-                          fg_color="#5c1a1a", hover_color=C_DANGER)
-            if status:
-                status.configure(text="Camera open — aim at barcode",
-                                  text_color=C_SUCCESS)
-        else:
-            btn.configure(text="📷  Scan with Camera",
-                          fg_color="#1a3a5c", hover_color=C_ACCENT)
-            if status:
-                status.configure(text="", text_color=C_TEXT_DIM)
-
-    def _camera_found(self, barcode: str, mode: str):
-        """Called (in Tk main thread) when camera successfully decodes a barcode."""
-        self._cam_set_state(mode, scanning=False)
-        # Re-enable ghost focus
-        self._scan_focus_active = True
-        self._scan_focus_tick()
-
-        play_beep(True)   # Audible confirmation — camera has no keyboard beep
-
-        if mode == "sales":
-            self._process_sale(barcode=barcode)
-        else:
-            self._on_restock_scan(barcode=barcode)
-
-    def _camera_cancelled(self, mode: str):
-        """Called when user presses Q/ESC in the camera window."""
-        self._cam_set_state(mode, scanning=False)
-        self._scan_focus_active = True
-        self._scan_focus_tick()
-        if mode == "sales" and self._cam_status_sale:
-            self._cam_status_sale.configure(text="Scan cancelled",
-                                             text_color=C_TEXT_DIM)
-        elif mode == "restock" and self._cam_status_restock:
-            self._cam_status_restock.configure(text="Scan cancelled",
-                                                text_color=C_TEXT_DIM)
-
-    def _camera_error(self, msg: str, mode: str):
-        """Called when the camera fails to open or crashes."""
-        self._cam_set_state(mode, scanning=False)
-        self._scan_focus_active = True
-        self._scan_focus_tick()
-        messagebox.showerror(
-            "Camera Error",
-            f"{msg}\n\nTips:\n"
-            "  • Make sure a webcam is connected and not used by another app.\n"
-            "  • Try closing Teams/Zoom/Skype before scanning.\n"
-            "  • If the problem persists, use a HID barcode scanner instead.",
-            parent=self,
-        )
 
 
     # ==================================================================
@@ -1856,26 +1602,9 @@ class InventoryApp(ctk.CTk):
                                           border_width=1, justify="center")
         self._restock_entry.pack(fill="x", padx=24, pady=(0, 10))
         self._restock_entry.bind("<Return>", self._on_restock_scan)
+        self._restock_entry.bind("<KeyRelease>", self._on_restock_key_release)
 
-        # Camera scan button row
-        rcam_row = ctk.CTkFrame(card, fg_color="transparent")
-        rcam_row.pack(fill="x", padx=24, pady=(0, 18))
-        self._cam_btn_restock = ctk.CTkButton(
-            rcam_row,
-            text="📷  Scan Barcode",
-            height=38,
-            corner_radius=8,
-            font=(FONT, 12, "bold"),
-            fg_color="#1a3a5c",
-            hover_color=C_ACCENT,
-            text_color=C_TEXT,
-            command=lambda: self._ask_scanner("restock")
-        )
-        self._cam_btn_restock.pack(side="left", fill="x", expand=True, padx=(0, 8))
-        self._cam_status_restock = ctk.CTkLabel(
-            rcam_row, text="",
-            font=(FONT, 10), text_color=C_TEXT_DIM, width=130, anchor="w")
-        self._cam_status_restock.pack(side="left")
+
 
         res = ctk.CTkFrame(frame, fg_color=C_CARD, corner_radius=16,
                            border_width=1, border_color=C_BORDER)
@@ -1907,6 +1636,21 @@ class InventoryApp(ctk.CTk):
                    f"+{entry['quantity_added']} → {entry['remaining_qty']} in stock")
             self._restock_log_add_row(ts, msg, C_SUCCESS, prepend=False)
 
+    def _on_restock_key_release(self, event):
+        if event.keysym in ("Return", "Tab"):
+            return
+        if hasattr(self, "_restock_debounce") and self._restock_debounce:
+            self.after_cancel(self._restock_debounce)
+        self._restock_debounce = self.after(600, self._check_auto_restock)
+
+    def _check_auto_restock(self):
+        raw = self._restock_entry.get().strip()
+        if len(raw) < 2: return
+        product = self.db.find_by_barcode(raw)
+        if product or len(raw) >= 5:
+            self._restock_entry.delete(0, "end")
+            self._on_restock_scan(barcode=raw)
+
     def _on_restock_scan(self, _=None, barcode: str | None = None):
         """
         Restock scan handler — optimised for Barcode2win / HID.
@@ -1932,9 +1676,8 @@ class InventoryApp(ctk.CTk):
             self._restock_entry.flash_custom("#dc3545", 300)  # Red 300ms
             play_beep(False)
             self._restock_result.configure(
-                text=f"Not Found: '{bc}' — add it in Inventory first",
+                text=f"Not Found: '{bc}'",
                 text_color=C_DANGER)
-            self._toast(f"❌  Barcode not found: {bc}")
             return
 
         qty_dlg = RestockQtyDialog(self, product)

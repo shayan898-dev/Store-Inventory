@@ -10,8 +10,8 @@ Flags used:
   --noconfirm  -> overwrites dist/ without prompting
 
 New in this version:
-  - Bundles barcode_scanner.py (OpenCV + pyzbar camera scanning)
-  - Collects all cv2 / pyzbar DLLs via collect_all hooks
+  - Barcode2Win integration with auto-quantity entry
+  - Streamlined build size
 
 Usage:
     python build_app.py
@@ -39,7 +39,7 @@ def clean_old_build():
 def build():
     print("=" * 62)
     print("  Inventory Manager Pro -- PyInstaller Build")
-    print("  (includes OpenCV + pyzbar camera scanner)")
+    print("  (Mobile Scanner Bridge Edition)")
     print("=" * 62)
 
     clean_old_build()
@@ -55,10 +55,7 @@ def build():
         "--name", EXE_NAME,
         # Python source files to bundle
         "--add-data", f"database_manager.py{sep}.",
-        "--add-data", f"barcode_scanner.py{sep}.",
         # Collect all data/DLLs for bundled packages
-        "--collect-all", "cv2",           # OpenCV (camera capture + QR fallback)
-        "--collect-all", "zxingcpp",      # zxing-cpp barcode decoder (statically linked)
         "--collect-all", "qrcode",
         "--collect-all", "flask",
         "--collect-all", "customtkinter",
@@ -76,7 +73,7 @@ def build():
         print(f"     Size     : {size_mb:.1f} MB")
         print(f"\n     -> Copy InventoryManager.exe anywhere -- no Python needed.")
         print(f"     -> inventory.db is created next to the .exe on first run.")
-        print(f"     -> Camera scanning requires a USB/built-in webcam.")
+        print(f"     -> Connect using Barcode2Win mobile app.")
     else:
         print("[FAIL] Build failed -- check the output above.")
         sys.exit(1)

@@ -279,12 +279,15 @@ class DatabaseManager:
 
             new_qty = max(0, product["quantity"] + amount)
             with self._connect() as conn:
-                conn.execute(
-                    "UPDATE products SET quantity=?, "
-                    "timestamp=strftime('%Y-%m-%d %H:%M:%S','now','localtime') "
-                    "WHERE barcode=?;",
-                    (new_qty, barcode.strip())
-                )
+                if new_qty == 0:
+                    conn.execute("DELETE FROM products WHERE barcode=?;", (barcode.strip(),))
+                else:
+                    conn.execute(
+                        "UPDATE products SET quantity=?, "
+                        "timestamp=strftime('%Y-%m-%d %H:%M:%S','now','localtime') "
+                        "WHERE barcode=?;",
+                        (new_qty, barcode.strip())
+                    )
                 conn.commit()
 
             product["quantity"] = new_qty
