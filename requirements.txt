@@ -1,0 +1,25 @@
+# ============================================================
+# Inventory Manager Pro — Python Dependencies
+# ============================================================
+#
+# Install all:
+#   pip install -r requirements.txt
+#
+# Windows note for pyzbar:
+#   pyzbar on Windows ships its own zbar DLLs — no extra install needed.
+#   On Linux:  sudo apt install libzbar0
+#   On macOS:  brew install zbar
+# ============================================================
+
+# GUI framework
+customtkinter>=5.2.0
+Pillow>=10.0.0          # Required by customtkinter for image support
+
+
+# Barcode scanning (camera-based)
+opencv-python>=4.8.0    # Webcam capture and frame processing
+pyzbar>=0.1.9           # Barcode/QR decoding (wraps libzbar)
+numpy>=1.24.0           # Required by opencv-python
+
+# Packaging (dev only — not needed on end-user machines)
+pyinstaller>=6.0.0
