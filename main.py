@@ -18,7 +18,15 @@ import os
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
 import customtkinter as ctk
+<<<<<<< HEAD
 from datetime import datetime
+=======
+import threading
+import socket
+from datetime import datetime
+from flask import Flask, jsonify, request, render_template_string
+import qrcode
+>>>>>>> dd7478b4348c04a6db0732c2eadcb380e38fbd34
 
 from database_manager import DatabaseManager
 
@@ -49,7 +57,11 @@ C_ROW_NORMAL = "#1C2128"
 FONT         = "Segoe UI"
 
 # Treeview columns (check column is the tick-box selector)
+<<<<<<< HEAD
 TV_COLS = ("check", "name", "category", "quantity", "price", "expiry", "barcode")
+=======
+TV_COLS = ("check", "barcode", "name", "category", "quantity", "price")
+>>>>>>> dd7478b4348c04a6db0732c2eadcb380e38fbd34
 
 # Preset categories for the dropdown
 CATEGORIES = [
@@ -57,7 +69,11 @@ CATEGORIES = [
     "Beverages", "Household", "Personal Care", "Electronics", "Clothing",
 ]
 
+<<<<<<< HEAD
 # Mobile bridge server port removed
+=======
+MOBILE_BRIDGE_PORT = 5000
+>>>>>>> dd7478b4348c04a6db0732c2eadcb380e38fbd34
 
 
 # ---------------------------------------------------------------------------
@@ -176,7 +192,11 @@ class ProductDialog(ctk.CTkToplevel):
         super().__init__(parent)
         self.result = None
         self.title(title)
+<<<<<<< HEAD
         self.geometry("440x650")
+=======
+        self.geometry("440x580")
+>>>>>>> dd7478b4348c04a6db0732c2eadcb380e38fbd34
         self.resizable(False, False)
         self.configure(fg_color=C_CARD)
         self.grab_set()
@@ -231,6 +251,7 @@ class ProductDialog(ctk.CTkToplevel):
                                      fg_color=C_CARD2, border_color=C_BORDER)
         self.e_price.pack(fill="x")
 
+<<<<<<< HEAD
         # ---- Expiry Date ----
         _lbl("Expiry Date")
         
@@ -279,6 +300,8 @@ class ProductDialog(ctk.CTkToplevel):
         self.e_expiry_year.set(str(current_year))
         self.e_expiry_year.pack(side="left", padx=(4, 0), fill="x", expand=True)
 
+=======
+>>>>>>> dd7478b4348c04a6db0732c2eadcb380e38fbd34
         # Pre-fill when editing
         self._is_edit = bool(product)
         if product:
@@ -292,6 +315,7 @@ class ProductDialog(ctk.CTkToplevel):
             self.e_category.set(cat)
             self.e_qty.insert(0, str(product.get("quantity", 0)))
             self.e_price.insert(0, str(product.get("price", 0.0)))
+<<<<<<< HEAD
             
             # Parse expiry date
             exp = product.get("expiry", "N/A")
@@ -312,6 +336,9 @@ class ProductDialog(ctk.CTkToplevel):
                 self.e_expiry_month.set("N/A")
                 self.e_expiry_year.set("N/A")
         
+=======
+
+>>>>>>> dd7478b4348c04a6db0732c2eadcb380e38fbd34
         # Buttons
         btn_row = ctk.CTkFrame(self, fg_color="transparent")
         btn_row.pack(fill="x", padx=32, pady=22)
@@ -322,11 +349,15 @@ class ProductDialog(ctk.CTkToplevel):
 
         if not self._is_edit:
             self.e_barcode.focus_set()
+<<<<<<< HEAD
             
+=======
+>>>>>>> dd7478b4348c04a6db0732c2eadcb380e38fbd34
         self.bind("<Return>", lambda e: self._save())
 
     # ----------------------------------------------------------------
 
+<<<<<<< HEAD
     def _on_month_key(self, event):
         self.after(50, self._check_month_input)
 
@@ -356,6 +387,8 @@ class ProductDialog(ctk.CTkToplevel):
             elif 1 <= m_int <= 12:
                 self.e_expiry_month.set(self.months_names[m_int - 1])
 
+=======
+>>>>>>> dd7478b4348c04a6db0732c2eadcb380e38fbd34
     def _scan_b2w(self):
         self.e_barcode.focus_set()
         self.e_barcode.configure(border_color=C_SUCCESS)
@@ -368,6 +401,7 @@ class ProductDialog(ctk.CTkToplevel):
         qty_raw   = self.e_qty.get().strip()
         price_raw = self.e_price.get().strip()
 
+<<<<<<< HEAD
         # Construct expiry date
         month_val = self.e_expiry_month.get().strip()
         if month_val.isdigit():
@@ -408,6 +442,8 @@ class ProductDialog(ctk.CTkToplevel):
                     month = "01"
             expiry = f"{year}-{month}-{day}"
 
+=======
+>>>>>>> dd7478b4348c04a6db0732c2eadcb380e38fbd34
         if not barcode or not name:
             messagebox.showerror("Required Fields", "Barcode and Product Name are required.", parent=self)
             return
@@ -425,7 +461,11 @@ class ProductDialog(ctk.CTkToplevel):
             return
 
         self.result = {"barcode": barcode, "name": name, "category": category,
+<<<<<<< HEAD
                        "quantity": qty, "price": price, "expiry": expiry}
+=======
+                       "quantity": qty, "price": price}
+>>>>>>> dd7478b4348c04a6db0732c2eadcb380e38fbd34
         self.destroy()
 
 
@@ -545,6 +585,7 @@ class SaleQtyDialog(ctk.CTkToplevel):
             messagebox.showerror("Invalid", "Enter a positive whole number.", parent=self)
 
 
+<<<<<<< HEAD
 class StaffDialog(ctk.CTkToplevel):
     """
     Modal dialog for Add / Edit staff.
@@ -640,6 +681,8 @@ class StaffDialog(ctk.CTkToplevel):
         self.destroy()
 
 
+=======
+>>>>>>> dd7478b4348c04a6db0732c2eadcb380e38fbd34
 # ---------------------------------------------------------------------------
 # Main application
 # ---------------------------------------------------------------------------
@@ -674,11 +717,22 @@ class InventoryApp(ctk.CTk):
         self._search_after: int | None = None
         self._checked_barcodes: set    = set()
         self._scan_focus_active: bool  = False
+<<<<<<< HEAD
+=======
+        self._mobile_bridge_port: int = MOBILE_BRIDGE_PORT
+        self._mobile_bridge_host: str = "0.0.0.0"
+        self._mobile_local_ip: str = self._get_local_ip()
+        self._mobile_qr_image = None
+>>>>>>> dd7478b4348c04a6db0732c2eadcb380e38fbd34
         self._current_bill: dict = {}
 
         self._build_sidebar()
         self._build_content()
         self._apply_tree_style()
+<<<<<<< HEAD
+=======
+        self._start_mobile_bridge_server()
+>>>>>>> dd7478b4348c04a6db0732c2eadcb380e38fbd34
 
         self.show_view("inventory")
 
@@ -698,7 +752,264 @@ class InventoryApp(ctk.CTk):
         lbl.place(relx=0.5, rely=0.95, anchor="center")
         self.after(ms, lbl.destroy)
 
+<<<<<<< HEAD
     # Mobile scanner bridge functions removed
+=======
+    def _get_local_ip(self) -> str:
+        """Best-effort LAN IP detection for mobile QR link."""
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        try:
+            sock.connect(("8.8.8.8", 80))
+            return sock.getsockname()[0]
+        except Exception:
+            return "127.0.0.1"
+        finally:
+            sock.close()
+
+    @property
+    def _mobile_base_url(self) -> str:
+        return f"http://{self._mobile_local_ip}:{self._mobile_bridge_port}"
+
+    def _start_mobile_bridge_server(self):
+        """Starts a lightweight Flask server in a daemon thread."""
+        self._mobile_flask_app = Flask(__name__)
+
+        @self._mobile_flask_app.get("/")
+        def mobile_index():
+            return render_template_string(self._mobile_scanner_html())
+
+        @self._mobile_flask_app.post("/scan")
+        def mobile_scan():
+            payload = request.get_json(silent=True) or request.form
+            barcode = _sanitise_barcode(str(payload.get("barcode", "")))
+            if len(barcode) < 2:
+                return jsonify({"ok": False, "error": "Invalid barcode"}), 400
+
+            # Route to Tk main thread safely.
+            self.after(0, lambda b=barcode: self._handle_mobile_scan(b))
+            return jsonify({"ok": True, "barcode": barcode})
+
+        @self._mobile_flask_app.get("/health")
+        def mobile_health():
+            return jsonify({"ok": True, "url": self._mobile_base_url})
+
+        def _run_server():
+            try:
+                self._mobile_flask_app.run(
+                    host=self._mobile_bridge_host,
+                    port=self._mobile_bridge_port,
+                    debug=False,
+                    use_reloader=False,
+                )
+            except OSError as exc:
+                print(f"[MobileBridge] Failed to start server: {exc}")
+
+        self._mobile_thread = threading.Thread(
+            target=_run_server,
+            name="MobileScannerBridge",
+            daemon=True,
+        )
+        self._mobile_thread.start()
+
+    def _mobile_scanner_html(self) -> str:
+        """Mobile-optimised barcode scanner page powered by ZXing."""
+        return """
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+    <title>Inventory Mobile Scanner</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --panel: #1e293b;
+            --text: #e2e8f0;
+            --muted: #94a3b8;
+            --ok: #22c55e;
+            --warn: #f59e0b;
+            --accent: #38bdf8;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: "Segoe UI", Tahoma, sans-serif;
+            color: var(--text);
+            background:
+                radial-gradient(1200px 400px at 0% -10%, #1d4ed8 0%, transparent 55%),
+                radial-gradient(1000px 300px at 100% 110%, #0ea5e9 0%, transparent 55%),
+                var(--bg);
+            padding: 16px;
+        }
+        .wrap {
+            max-width: 560px;
+            margin: 0 auto;
+            display: grid;
+            gap: 12px;
+        }
+        .card {
+            background: color-mix(in srgb, var(--panel) 92%, black);
+            border: 1px solid #334155;
+            border-radius: 16px;
+            padding: 14px;
+        }
+        h1 {
+            margin: 0 0 6px;
+            font-size: 1.15rem;
+            font-weight: 700;
+        }
+        p { margin: 0; color: var(--muted); line-height: 1.45; }
+        video {
+            width: 100%;
+            border-radius: 12px;
+            background: #000;
+            border: 1px solid #475569;
+        }
+        .row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        button {
+            border: 0;
+            border-radius: 10px;
+            padding: 10px 14px;
+            color: #00111a;
+            background: var(--accent);
+            font-weight: 700;
+        }
+        .badge {
+            margin-left: auto;
+            font-size: 0.82rem;
+            font-weight: 700;
+            padding: 5px 10px;
+            border-radius: 999px;
+            background: #334155;
+            color: var(--text);
+        }
+        .ok { background: #14532d; color: #86efac; }
+        .warn { background: #78350f; color: #fcd34d; }
+        code {
+            display: block;
+            margin-top: 8px;
+            padding: 10px;
+            background: #0b1220;
+            border: 1px solid #334155;
+            border-radius: 10px;
+            color: #a5f3fc;
+            overflow-wrap: anywhere;
+        }
+    </style>
+</head>
+<body>
+    <div class="wrap">
+        <div class="card">
+            <h1>Inventory Mobile Scanner</h1>
+            <p>Point your camera at a barcode. Detected codes are sent instantly to the desktop app.</p>
+            <code id="serverUrl"></code>
+        </div>
+
+        <div class="card">
+            <video id="preview" playsinline></video>
+            <div class="row">
+                <button id="startBtn" type="button">Start Camera</button>
+                <span id="stateBadge" class="badge warn">idle</span>
+            </div>
+            <p id="lastScan" style="margin-top:10px;">Last scan: none</p>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/@zxing/library@0.20.0/umd/index.min.js"></script>
+    <script>
+        const baseUrl = window.location.origin;
+        const preview = document.getElementById("preview");
+        const startBtn = document.getElementById("startBtn");
+        const stateBadge = document.getElementById("stateBadge");
+        const lastScan = document.getElementById("lastScan");
+        const serverUrl = document.getElementById("serverUrl");
+        serverUrl.textContent = "Desktop bridge: " + baseUrl;
+
+        const reader = new ZXing.BrowserMultiFormatReader();
+        let lastSentCode = "";
+        let lastSentAt = 0;
+
+        const setState = (label, cls) => {
+            stateBadge.textContent = label;
+            stateBadge.className = "badge " + cls;
+        };
+
+        const sendScan = async (barcode) => {
+            const now = Date.now();
+            if (barcode === lastSentCode && (now - lastSentAt) < 1200) {
+                return;
+            }
+            lastSentCode = barcode;
+            lastSentAt = now;
+
+            try {
+                const response = await fetch(baseUrl + "/scan", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ barcode })
+                });
+                if (!response.ok) {
+                    setState("send failed", "warn");
+                    return;
+                }
+                if (navigator.vibrate) navigator.vibrate(80);
+                lastScan.textContent = "Last scan: " + barcode;
+                setState("sent", "ok");
+            } catch (error) {
+                setState("offline", "warn");
+            }
+        };
+
+        const startScan = async () => {
+            setState("starting", "warn");
+            try {
+                const devices = await ZXing.BrowserCodeReader.listVideoInputDevices();
+                const preferred = devices.find((d) => /back|rear|environment/i.test(d.label));
+                const deviceId = (preferred || devices[0])?.deviceId;
+                await reader.decodeFromVideoDevice(deviceId, preview, (result) => {
+                    if (!result) return;
+                    const code = String(result.getText() || "").trim();
+                    if (!code) return;
+                    sendScan(code);
+                });
+                setState("scanning", "ok");
+            } catch (error) {
+                setState("camera blocked", "warn");
+            }
+        };
+
+        startBtn.addEventListener("click", startScan);
+    </script>
+</body>
+</html>
+        """
+
+    def _handle_mobile_scan(self, barcode: str):
+        """Dispatch mobile scans into the active desktop workflow."""
+        grab = self.grab_current()
+        if grab and hasattr(grab, "qty_entry"):
+            self._toast("Scanning is paused until quantity is set.", ms=2200)
+            return
+            
+        if grab and hasattr(grab, "e_barcode") and str(grab.e_barcode.cget("state")) != "disabled":
+            grab.e_barcode.delete(0, "end")
+            grab.e_barcode.insert(0, barcode)
+            grab.e_name.focus_set()
+            return
+
+        if self._active_view == "sales":
+            self._process_sale(barcode=barcode)
+        elif self._active_view == "restock":
+            self._on_restock_scan(barcode=barcode)
+        else:
+            self._toast("Open Sales or Restock mode to accept mobile scans.", ms=2200)
+>>>>>>> dd7478b4348c04a6db0732c2eadcb380e38fbd34
 
     def _start_b2w_sale(self):
         self._sale_entry.focus_set()
@@ -737,19 +1048,100 @@ class InventoryApp(ctk.CTk):
             ("sales",     "🛒", "Sales"),
             ("restock",   "📥", "Restock"),
             ("reports",   "📊", "Reports"),
+<<<<<<< HEAD
             ("staff",     "👥", "Staff"),
+=======
+>>>>>>> dd7478b4348c04a6db0732c2eadcb380e38fbd34
         ]:
             btn = SidebarButton(sb, text=label, icon=icon,
                                 command=lambda v=name: self.show_view(v))
             btn.pack(fill="x", padx=12, pady=3)
             self._nav_btns[name] = btn
 
+<<<<<<< HEAD
         # Mobile Link button removed
+=======
+        ctk.CTkButton(
+            sb,
+            text="  📱  Mobile Link",
+            anchor="w",
+            height=42,
+            corner_radius=8,
+            fg_color=C_CARD,
+            hover_color=C_CARD2,
+            text_color=C_TEXT,
+            font=(FONT, 13, "bold"),
+            command=self._open_mobile_link_window,
+        ).pack(fill="x", padx=12, pady=(12, 6))
+>>>>>>> dd7478b4348c04a6db0732c2eadcb380e38fbd34
 
         ctk.CTkLabel(sb, text="SQLite  •  Local Only", font=(FONT, 10),
                      text_color=C_TEXT_DIM).pack(side="bottom", pady=16)
 
+<<<<<<< HEAD
     # _open_mobile_link_window removed
+=======
+    def _open_mobile_link_window(self):
+        """Shows QR code and URL for connecting a phone scanner."""
+        self._mobile_local_ip = self._get_local_ip()
+        url = self._mobile_base_url
+
+        win = ctk.CTkToplevel(self)
+        win.title("Mobile Scanner Bridge")
+        win.geometry("380x520")
+        win.resizable(False, False)
+        win.configure(fg_color=C_CARD)
+        win.transient(self)
+        win.grab_set()
+
+        ctk.CTkLabel(
+            win,
+            text="📱  Mobile Scanner Bridge",
+            font=(FONT, 18, "bold"),
+            text_color=C_TEXT,
+        ).pack(pady=(22, 6))
+
+        ctk.CTkLabel(
+            win,
+            text="Scan this QR code from your phone on the same Wi-Fi network.",
+            font=(FONT, 12),
+            text_color=C_TEXT_DIM,
+            wraplength=320,
+            justify="center",
+        ).pack(padx=20, pady=(0, 12))
+
+        qr_img = qrcode.make(url).convert("RGB")
+        self._mobile_qr_image = ctk.CTkImage(light_image=qr_img, dark_image=qr_img, size=(240, 240))
+        ctk.CTkLabel(win, text="", image=self._mobile_qr_image).pack(pady=(6, 10))
+
+        url_entry = ctk.CTkEntry(
+            win,
+            height=38,
+            font=(FONT, 12),
+            fg_color=C_CARD2,
+            border_color=C_BORDER,
+            justify="center",
+        )
+        url_entry.insert(0, url)
+        url_entry.configure(state="readonly")
+        url_entry.pack(fill="x", padx=20, pady=(0, 10))
+
+        ctk.CTkLabel(
+            win,
+            text="Tip: Keep desktop on Sales or Restock view while scanning.",
+            font=(FONT, 11),
+            text_color=C_TEXT_DIM,
+        ).pack(pady=(0, 16))
+
+        ctk.CTkButton(
+            win,
+            text="Close",
+            fg_color=C_ACCENT,
+            hover_color=C_ACCENT_HVR,
+            command=win.destroy,
+            width=120,
+        ).pack(pady=(0, 18))
+>>>>>>> dd7478b4348c04a6db0732c2eadcb380e38fbd34
 
     # ------------------------------------------------------------------
     # Content area
@@ -805,8 +1197,11 @@ class InventoryApp(ctk.CTk):
             self._sales_load_log()
         elif name == "restock":
             self._restock_load_log()
+<<<<<<< HEAD
         elif name == "staff":
             self._staff_refresh()
+=======
+>>>>>>> dd7478b4348c04a6db0732c2eadcb380e38fbd34
 
     # ==================================================================
     #  INVENTORY VIEW
@@ -866,6 +1261,7 @@ class InventoryApp(ctk.CTk):
 
         cols = {
             "check":    ("☐",            40,  "center"),
+<<<<<<< HEAD
             "name":     ("Product Name", 260, "center"),
             "category": ("Category",     120, "center"),
             "quantity": ("Qty",           65, "center"),
@@ -876,6 +1272,17 @@ class InventoryApp(ctk.CTk):
         for col, (heading, width, anchor) in cols.items():
             self._inv_tree.heading(col, text=heading, anchor="center")
             self._inv_tree.column(col, width=width, minwidth=30, anchor="center")
+=======
+            "barcode":  ("Barcode",      160, "w"),
+            "name":     ("Product Name", 260, "w"),
+            "category": ("Category",     120, "w"),
+            "quantity": ("Qty",           65, "center"),
+            "price":    ("Price (PKR)",  140, "e"),
+        }
+        for col, (heading, width, anchor) in cols.items():
+            self._inv_tree.heading(col, text=heading, anchor=anchor)
+            self._inv_tree.column(col, width=width, minwidth=30, anchor=anchor)
+>>>>>>> dd7478b4348c04a6db0732c2eadcb380e38fbd34
 
         self._inv_tree.bind("<Button-1>", self._tree_click)
         self._inv_tree.tag_configure("low",    background="#2D2000", foreground="#D29922")
@@ -911,10 +1318,16 @@ class InventoryApp(ctk.CTk):
                 low_n += 1
             chk = "☑" if p["barcode"] in self._checked_barcodes else "☐"
             self._inv_tree.insert("", "end", iid=p["barcode"], tags=(tag,),
+<<<<<<< HEAD
                                    values=(chk, p["name"],
                                            p.get("category", "General"),
                                            p["quantity"], format_price(p["price"]),
                                            p.get("expiry", "N/A"), p["barcode"]))
+=======
+                                   values=(chk, p["barcode"], p["name"],
+                                           p.get("category", "General"),
+                                           p["quantity"], format_price(p["price"])))
+>>>>>>> dd7478b4348c04a6db0732c2eadcb380e38fbd34
 
         self._sync_check_header()
         total   = len(products)
@@ -943,7 +1356,11 @@ class InventoryApp(ctk.CTk):
         if dlg.result:
             d = dlg.result
             ok = self.db.add_product(d["barcode"], d["name"], d["category"],
+<<<<<<< HEAD
                                      d["quantity"], d["price"], d.get("expiry", "N/A"))
+=======
+                                     d["quantity"], d["price"])
+>>>>>>> dd7478b4348c04a6db0732c2eadcb380e38fbd34
             if ok:
                 self._inv_refresh(self._search_var.get())
                 self._toast("✅  Product added successfully!")
@@ -963,7 +1380,11 @@ class InventoryApp(ctk.CTk):
         if dlg.result:
             d = dlg.result
             self.db.update_product(d["barcode"], d["name"], d["category"],
+<<<<<<< HEAD
                                    d["quantity"], d["price"], d.get("expiry", "N/A"))
+=======
+                                   d["quantity"], d["price"])
+>>>>>>> dd7478b4348c04a6db0732c2eadcb380e38fbd34
             self._inv_refresh(self._search_var.get())
             self._toast("✅  Product updated!")
 
@@ -1375,7 +1796,11 @@ class InventoryApp(ctk.CTk):
         if dlg.result:
             d = dlg.result
             ok = self.db.add_product(d["barcode"], d["name"], d["category"],
+<<<<<<< HEAD
                                      d["quantity"], d["price"], d.get("expiry", "N/A"))
+=======
+                                     d["quantity"], d["price"])
+>>>>>>> dd7478b4348c04a6db0732c2eadcb380e38fbd34
             if ok:
                 self._toast(f"✅  Product added: {d['name']}")
                 if "inventory" in self._views:
@@ -1753,6 +2178,7 @@ class InventoryApp(ctk.CTk):
         self.after(500, self._scan_focus_tick)
 
 
+<<<<<<< HEAD
     # ==================================================================
     #  STAFF VIEW
     # ==================================================================
@@ -1908,6 +2334,8 @@ class InventoryApp(ctk.CTk):
                 messagebox.showerror("Error", "Could not delete staff record.")
 
 
+=======
+>>>>>>> dd7478b4348c04a6db0732c2eadcb380e38fbd34
 # ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------

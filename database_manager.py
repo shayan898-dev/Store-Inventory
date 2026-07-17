@@ -82,7 +82,10 @@ class DatabaseManager:
                     category  TEXT NOT NULL DEFAULT 'General',
                     quantity  INTEGER NOT NULL DEFAULT 0,
                     price     REAL NOT NULL DEFAULT 0.0,
+<<<<<<< HEAD
                     expiry    TEXT DEFAULT 'N/A',
+=======
+>>>>>>> dd7478b4348c04a6db0732c2eadcb380e38fbd34
                     timestamp TEXT NOT NULL DEFAULT (strftime('%Y-%m-%d %H:%M:%S','now','localtime'))
                 );
             """)
@@ -111,6 +114,7 @@ class DatabaseManager:
                 );
             """)
 
+<<<<<<< HEAD
             # ---- Staff table ----
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS staff (
@@ -123,6 +127,8 @@ class DatabaseManager:
                 );
             """)
 
+=======
+>>>>>>> dd7478b4348c04a6db0732c2eadcb380e38fbd34
             conn.commit()
 
             # ---- Migration: add new columns to existing DBs ----
@@ -136,10 +142,13 @@ class DatabaseManager:
             conn.execute("ALTER TABLE products ADD COLUMN category TEXT NOT NULL DEFAULT 'General';")
             print("[DB] Migrated: added 'category' column")
 
+<<<<<<< HEAD
         if "expiry" not in existing_cols:
             conn.execute("ALTER TABLE products ADD COLUMN expiry TEXT DEFAULT 'N/A';")
             print("[DB] Migrated: added 'expiry' column")
 
+=======
+>>>>>>> dd7478b4348c04a6db0732c2eadcb380e38fbd34
         if "timestamp" not in existing_cols:
             # SQLite ALTER TABLE only accepts constant literals as DEFAULT —
             # existing rows get a placeholder; new rows use the CREATE TABLE default.
@@ -157,7 +166,11 @@ class DatabaseManager:
 
     def get_all_products(self) -> list[dict]:
         """Returns all products sorted alphabetically by name."""
+<<<<<<< HEAD
         sql = "SELECT barcode, name, category, quantity, price, expiry, timestamp FROM products ORDER BY name ASC;"
+=======
+        sql = "SELECT barcode, name, category, quantity, price, timestamp FROM products ORDER BY name ASC;"
+>>>>>>> dd7478b4348c04a6db0732c2eadcb380e38fbd34
         with self._connect() as conn:
             return [dict(r) for r in conn.execute(sql).fetchall()]
 
@@ -165,7 +178,11 @@ class DatabaseManager:
         """Case-insensitive filter by barcode, name, or category."""
         pattern = f"%{query}%"
         sql = """
+<<<<<<< HEAD
             SELECT barcode, name, category, quantity, price, expiry, timestamp
+=======
+            SELECT barcode, name, category, quantity, price, timestamp
+>>>>>>> dd7478b4348c04a6db0732c2eadcb380e38fbd34
             FROM products
             WHERE barcode LIKE ? OR name LIKE ? OR category LIKE ?
             ORDER BY name ASC;
@@ -175,7 +192,11 @@ class DatabaseManager:
 
     def find_by_barcode(self, barcode: str) -> Optional[dict]:
         """Exact barcode lookup. Returns dict or None."""
+<<<<<<< HEAD
         sql = "SELECT barcode, name, category, quantity, price, expiry, timestamp FROM products WHERE barcode = ?;"
+=======
+        sql = "SELECT barcode, name, category, quantity, price, timestamp FROM products WHERE barcode = ?;"
+>>>>>>> dd7478b4348c04a6db0732c2eadcb380e38fbd34
         with self._connect() as conn:
             row = conn.execute(sql, (barcode.strip(),)).fetchone()
         return dict(row) if row else None
@@ -225,36 +246,61 @@ class DatabaseManager:
     # ------------------------------------------------------------------
 
     def add_product(self, barcode: str, name: str, category: str,
+<<<<<<< HEAD
                     quantity: int, price: float, expiry: str = "N/A") -> bool:
+=======
+                    quantity: int, price: float) -> bool:
+>>>>>>> dd7478b4348c04a6db0732c2eadcb380e38fbd34
         """
         Inserts a new product.
         Returns True on success, False if barcode already exists.
         """
         sql = """
+<<<<<<< HEAD
             INSERT INTO products (barcode, name, category, quantity, price, expiry, timestamp)
             VALUES (?, ?, ?, ?, ?, ?, strftime('%Y-%m-%d %H:%M:%S','now','localtime'));
+=======
+            INSERT INTO products (barcode, name, category, quantity, price, timestamp)
+            VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%d %H:%M:%S','now','localtime'));
+>>>>>>> dd7478b4348c04a6db0732c2eadcb380e38fbd34
         """
         try:
             with self._connect() as conn:
                 conn.execute(sql, (barcode.strip(), name.strip(), category.strip(),
+<<<<<<< HEAD
                                    int(quantity), float(price), expiry.strip()))
+=======
+                                   int(quantity), float(price)))
+>>>>>>> dd7478b4348c04a6db0732c2eadcb380e38fbd34
                 conn.commit()
             return True
         except sqlite3.IntegrityError:
             return False   # Duplicate barcode
 
     def update_product(self, barcode: str, name: str, category: str,
+<<<<<<< HEAD
                        quantity: int, price: float, expiry: str = "N/A") -> bool:
         """Updates an existing product. Returns True if a row was changed."""
         sql = """
             UPDATE products
             SET name=?, category=?, quantity=?, price=?, expiry=?,
+=======
+                       quantity: int, price: float) -> bool:
+        """Updates an existing product. Returns True if a row was changed."""
+        sql = """
+            UPDATE products
+            SET name=?, category=?, quantity=?, price=?,
+>>>>>>> dd7478b4348c04a6db0732c2eadcb380e38fbd34
                 timestamp=strftime('%Y-%m-%d %H:%M:%S','now','localtime')
             WHERE barcode=?;
         """
         with self._connect() as conn:
             cur = conn.execute(sql, (name.strip(), category.strip(),
+<<<<<<< HEAD
                                      int(quantity), float(price), expiry.strip(), barcode.strip()))
+=======
+                                     int(quantity), float(price), barcode.strip()))
+>>>>>>> dd7478b4348c04a6db0732c2eadcb380e38fbd34
             conn.commit()
         return cur.rowcount > 0
 
@@ -390,7 +436,11 @@ class DatabaseManager:
             products = self.get_all_products()
             with open(filepath, "w", newline="", encoding="utf-8") as f:
                 writer = csv.DictWriter(
+<<<<<<< HEAD
                     f, fieldnames=["barcode", "name", "category", "quantity", "price", "expiry", "timestamp"]
+=======
+                    f, fieldnames=["barcode", "name", "category", "quantity", "price", "timestamp"]
+>>>>>>> dd7478b4348c04a6db0732c2eadcb380e38fbd34
                 )
                 writer.writeheader()
                 writer.writerows(products)
@@ -398,6 +448,7 @@ class DatabaseManager:
         except Exception as e:
             print(f"[DB] Export error: {e}")
             return False
+<<<<<<< HEAD
 
     # ------------------------------------------------------------------
     # Staff — Read & Write
@@ -463,3 +514,5 @@ class DatabaseManager:
         except Exception as e:
             print(f"[DB] Error deleting staff: {e}")
             return False
+=======
+>>>>>>> dd7478b4348c04a6db0732c2eadcb380e38fbd34

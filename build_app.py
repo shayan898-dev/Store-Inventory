@@ -56,6 +56,11 @@ def build():
         # Python source files to bundle
         "--add-data", f"database_manager.py{sep}.",
         # Collect all data/DLLs for bundled packages
+<<<<<<< HEAD
+=======
+        "--collect-all", "qrcode",
+        "--collect-all", "flask",
+>>>>>>> dd7478b4348c04a6db0732c2eadcb380e38fbd34
         "--collect-all", "customtkinter",
         "main.py",
     ]
