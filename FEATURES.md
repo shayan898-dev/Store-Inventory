@@ -59,7 +59,8 @@ The application navigation sidebar includes five main sections:
 ### 👥 Staff Management (New)
 - **Description**: A dedicated view to register and track employees.
 - **Key Functions**:
-  - **Add / Edit / Delete Staff**: Record Name, Phone Number, Role (Staff, Manager, Cashier, Owner), and Working Status.
+  - **Add / Edit / Delete Staff**: Record Name, Phone Number, Role (Staff, Manager, Cashier, Owner), Working Status, and Salary.
+  - **Salary Tracking**: Input and review salaries directly, with inputs automatically validated.
   - **Working Status**: Easily toggle and track who is currently `"Working"` or `"Not Working"`.
   - **Live Counters**: The status bar at the bottom displays real-time metrics, showing the total number of staff and how many are currently on shift.
   - **Search**: Case-insensitive filter to find staff members by name, phone number, or role.

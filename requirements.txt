@@ -15,12 +15,6 @@
 customtkinter>=5.2.0
 Pillow>=10.0.0          # Required by customtkinter for image support
 
-<<<<<<< HEAD
-=======
-# Mobile scanner bridge
-flask>=3.0.0            # Lightweight server for phone-based scanning
-qrcode[pil]>=8.0        # QR code generation for the mobile link window
->>>>>>> dd7478b4348c04a6db0732c2eadcb380e38fbd34
 
 # Barcode scanning (camera-based)
 opencv-python>=4.8.0    # Webcam capture and frame processing

@@ -4,13 +4,6 @@ from PyInstaller.utils.hooks import collect_all
 datas = [('database_manager.py', '.')]
 binaries = []
 hiddenimports = []
-<<<<<<< HEAD
-=======
-tmp_ret = collect_all('qrcode')
-datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
-tmp_ret = collect_all('flask')
-datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
->>>>>>> dd7478b4348c04a6db0732c2eadcb380e38fbd34
 tmp_ret = collect_all('customtkinter')
 datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
 
