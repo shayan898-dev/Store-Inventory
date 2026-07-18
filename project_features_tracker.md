@@ -139,12 +139,13 @@ erDiagram
 - [x] StaffDialog modal for adding and editing staff details (with Salary entry).
 - [x] Status bar displaying total staff counts and currently working staff metrics.
 - [x] Search filter for name, phone, or role.
+- [x] User Logins Management dialog and login authentication screen.
 
 #### Logic / Data Tasks
 - [x] SQLite `staff` table creation with status, role, and salary parameters.
 - [x] CRUD operations (with salary support) for adding, updating, and deleting staff records.
+- [x] Role-Based Access Control (Admin vs. Staff view rendering toggles & backend checks).
 - [ ] Cashier shift session logging (clock-in, clock-out, starting till, ending till).
-- [ ] Role-Based Access Control (Admin vs. Cashier view rendering toggles).
 
 ---
 

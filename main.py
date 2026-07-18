@@ -657,6 +657,179 @@ class StaffDialog(ctk.CTkToplevel):
         self.destroy()
 
 
+class LoginApp(ctk.CTk):
+    """Modern, sleek Login window using CustomTkinter styles."""
+
+    def __init__(self, db: DatabaseManager):
+        super().__init__()
+        self.db = db
+        self.authenticated = False
+        self.username = ""
+        self.role = ""
+
+        self.title("Store Inventory Pro - Login")
+        self.geometry("380x420")
+        self.resizable(False, False)
+        self.configure(fg_color=C_BG)
+
+        # Center on screen
+        self.update_idletasks()
+        w = self.winfo_screenwidth()
+        h = self.winfo_screenheight()
+        x = (w // 2) - 190
+        y = (h // 2) - 210
+        self.geometry(f"+{x}+{y}")
+
+        # Title / Logo
+        ctk.CTkLabel(self, text="🏪  InvManager Pro", font=(FONT, 20, "bold"), text_color=C_TEXT).pack(pady=(40, 4))
+        ctk.CTkLabel(self, text="Sign in to your account", font=(FONT, 12), text_color=C_TEXT_DIM).pack(pady=(0, 24))
+
+        form = ctk.CTkFrame(self, fg_color="transparent")
+        form.pack(fill="x", padx=40)
+
+        # Username
+        ctk.CTkLabel(form, text="Username", font=(FONT, 12), text_color=C_TEXT_DIM, anchor="w").pack(fill="x", pady=(8, 2))
+        self.e_user = ctk.CTkEntry(form, height=40, font=(FONT, 13), fg_color=C_CARD, border_color=C_BORDER)
+        self.e_user.pack(fill="x")
+        self.e_user.insert(0, "admin")
+
+        # Password
+        ctk.CTkLabel(form, text="Password", font=(FONT, 12), text_color=C_TEXT_DIM, anchor="w").pack(fill="x", pady=(12, 2))
+        self.e_pass = ctk.CTkEntry(form, height=40, show="*", font=(FONT, 13), fg_color=C_CARD, border_color=C_BORDER)
+        self.e_pass.pack(fill="x")
+        self.e_pass.insert(0, "admin")
+
+        # Submit button
+        self.btn_login = ctk.CTkButton(self, text="Sign In", fg_color=C_ACCENT, hover_color=C_ACCENT_HVR,
+                                      height=44, font=(FONT, 13, "bold"), command=self._login)
+        self.btn_login.pack(pady=32, padx=40, fill="x")
+
+        self.bind("<Return>", lambda e: self._login())
+        self.e_user.focus_set()
+
+    def _login(self):
+        username = self.e_user.get().strip()
+        password = self.e_pass.get().strip()
+
+        if not username or not password:
+            messagebox.showerror("Error", "Please fill in all fields.", parent=self)
+            return
+
+        role = self.db.authenticate_user(username, password)
+        if role:
+            self.authenticated = True
+            self.username = username
+            self.role = role
+            self.destroy()
+        else:
+            messagebox.showerror("Unauthorized", "Invalid username or password.", parent=self)
+
+
+class ManageUsersDialog(ctk.CTkToplevel):
+    """Modal window to add and delete user logins (accessible by Admin only)."""
+
+    def __init__(self, parent, db: DatabaseManager):
+        super().__init__(parent)
+        self.db = db
+        self.title("Manage User Logins")
+        self.geometry("500x480")
+        self.resizable(False, False)
+        self.configure(fg_color=C_CARD)
+        self.grab_set()
+        self.focus_set()
+
+        # Title
+        ctk.CTkLabel(self, text="🔑  User Login Accounts", font=(FONT, 18, "bold")).pack(pady=(20, 10))
+
+        # Form Frame
+        form = ctk.CTkFrame(self, fg_color="transparent")
+        form.pack(fill="x", padx=28, pady=10)
+
+        # Fields: Username, Password, Role
+        ctk.CTkLabel(form, text="New Username", font=(FONT, 11), text_color=C_TEXT_DIM).grid(row=0, column=0, padx=4, pady=2, sticky="w")
+        ctk.CTkLabel(form, text="Password", font=(FONT, 11), text_color=C_TEXT_DIM).grid(row=0, column=1, padx=4, pady=2, sticky="w")
+        ctk.CTkLabel(form, text="Role", font=(FONT, 11), text_color=C_TEXT_DIM).grid(row=0, column=2, padx=4, pady=2, sticky="w")
+
+        self.e_user = ctk.CTkEntry(form, width=130, height=34, font=(FONT, 12), fg_color=C_CARD2, border_color=C_BORDER)
+        self.e_user.grid(row=1, column=0, padx=4, pady=2)
+
+        self.e_pass = ctk.CTkEntry(form, width=130, height=34, font=(FONT, 12), fg_color=C_CARD2, border_color=C_BORDER)
+        self.e_pass.grid(row=1, column=1, padx=4, pady=2)
+
+        self.e_role = ctk.CTkComboBox(form, values=["staff", "admin"], width=90, height=34, font=(FONT, 12),
+                                      fg_color=C_CARD2, border_color=C_BORDER)
+        self.e_role.set("staff")
+        self.e_role.grid(row=1, column=2, padx=4, pady=2)
+
+        ctk.CTkButton(form, text="＋ Add", fg_color=C_ACCENT, hover_color=C_ACCENT_HVR, width=70, height=34,
+                      command=self._add_user).grid(row=1, column=3, padx=4, pady=2)
+
+        # List Frame
+        list_frame = ctk.CTkFrame(self, fg_color=C_CARD2, corner_radius=8)
+        list_frame.pack(fill="both", expand=True, padx=28, pady=(10, 20))
+
+        # Scrollbar and Treeview for Users
+        vsb = ttk.Scrollbar(list_frame)
+        vsb.pack(side="right", fill="y")
+
+        self.tree = ttk.Treeview(list_frame, columns=("username", "role"), show="headings",
+                                 style="T.Treeview", yscrollcommand=vsb.set, selectmode="browse")
+        vsb.configure(command=self.tree.yview)
+
+        self.tree.heading("username", text="Username", anchor="center")
+        self.tree.heading("role", text="Access Role", anchor="center")
+        self.tree.column("username", width=220, anchor="center")
+        self.tree.column("role", width=180, anchor="center")
+        self.tree.pack(fill="both", expand=True, padx=2, pady=2)
+
+        # Delete Button
+        ctk.CTkButton(self, text="🗑  Delete Selected User", fg_color="#3B1A1A", hover_color=C_DANGER,
+                      height=36, command=self._delete_user).pack(pady=(0, 20))
+
+        self._refresh_users()
+
+    def _refresh_users(self):
+        for row in self.tree.get_children():
+            self.tree.delete(row)
+        for u in self.db.get_all_users():
+            self.tree.insert("", "end", iid=u["username"], values=(u["username"], u["role"].capitalize()))
+
+    def _add_user(self):
+        user = self.e_user.get().strip().lower()
+        pwd = self.e_pass.get().strip()
+        role = self.e_role.get().strip().lower()
+
+        if not user or not pwd:
+            messagebox.showerror("Error", "Username and password cannot be empty.", parent=self)
+            return
+
+        if self.db.add_user(user, pwd, role):
+            self._refresh_users()
+            self.e_user.delete(0, "end")
+            self.e_pass.delete(0, "end")
+            messagebox.showinfo("Success", f"User '{user}' added successfully.", parent=self)
+        else:
+            messagebox.showerror("Error", f"Could not add user. Username may already exist.", parent=self)
+
+    def _delete_user(self):
+        sel = self.tree.selection()
+        if not sel:
+            messagebox.showwarning("No Selection", "Please select a user to delete.", parent=self)
+            return
+        username = sel[0]
+
+        if username in ("admin", "staff"):
+            messagebox.showerror("Forbidden", "Default users 'admin' and 'staff' cannot be deleted.", parent=self)
+            return
+
+        if messagebox.askyesno("Confirm Delete", f"Are you sure you want to delete user '{username}'?", parent=self):
+            if self.db.delete_user(username):
+                self._refresh_users()
+                messagebox.showinfo("Deleted", f"User '{username}' deleted.", parent=self)
+            else:
+                messagebox.showerror("Error", "Could not delete user.", parent=self)
+
+
 # ---------------------------------------------------------------------------
 # Main application
 # ---------------------------------------------------------------------------
@@ -671,12 +844,14 @@ class InventoryApp(ctk.CTk):
         └──────────┴───────────────────────────────────┘
     """
 
-    def __init__(self):
+    def __init__(self, db: DatabaseManager, username: str, user_role: str):
         super().__init__()
-        self.db = DatabaseManager()
+        self.db = db
+        self.username = username
+        self.user_role = user_role
 
         # Window
-        self.title("Inventory Manager Pro")
+        self.title(f"Inventory Manager Pro (Logged in as: {self.username} [{self.user_role.capitalize()}])")
         self.geometry("1260x780")
         self.minsize(980, 620)
         self.configure(fg_color=C_BG)
@@ -749,13 +924,18 @@ class InventoryApp(ctk.CTk):
         ctk.CTkFrame(sb, height=1, fg_color=C_BORDER).pack(fill="x", padx=16, pady=10)
 
         self._nav_btns: dict[str, SidebarButton] = {}
-        for name, icon, label in [
+        nav_items = [
             ("inventory", "📦", "Inventory"),
             ("sales",     "🛒", "Sales"),
-            ("restock",   "📥", "Restock"),
-            ("reports",   "📊", "Reports"),
-            ("staff",     "👥", "Staff"),
-        ]:
+        ]
+        if self.user_role == "admin":
+            nav_items.extend([
+                ("restock",   "📥", "Restock"),
+                ("reports",   "📊", "Reports"),
+                ("staff",     "👥", "Staff"),
+            ])
+
+        for name, icon, label in nav_items:
             btn = SidebarButton(sb, text=label, icon=icon,
                                 command=lambda v=name: self.show_view(v))
             btn.pack(fill="x", padx=12, pady=3)
@@ -795,6 +975,10 @@ class InventoryApp(ctk.CTk):
     # ------------------------------------------------------------------
 
     def show_view(self, name: str):
+        if self.user_role != "admin" and name in ("restock", "reports", "staff"):
+            messagebox.showerror("Permission Denied", "You do not have permission to access this section.")
+            return
+
         if self._active_view in ("sales", "restock"):
             self._scan_focus_active = False
 
@@ -846,9 +1030,10 @@ class InventoryApp(ctk.CTk):
                           height=36, corner_radius=8, font=(FONT, 12),
                           command=cmd).pack(side="left", padx=pad)
 
-        _btn(btns, "＋  Add",       C_ACCENT,   C_ACCENT_HVR, self._inv_add)
-        _btn(btns, "✏  Edit",      C_CARD2,    C_BORDER,     self._inv_edit)
-        _btn(btns, "🗑  Delete",    "#3B1A1A",  C_DANGER,     self._inv_delete)
+        if self.user_role == "admin":
+            _btn(btns, "＋  Add",       C_ACCENT,   C_ACCENT_HVR, self._inv_add)
+            _btn(btns, "✏  Edit",      C_CARD2,    C_BORDER,     self._inv_edit)
+            _btn(btns, "🗑  Delete",    "#3B1A1A",  C_DANGER,     self._inv_delete)
         _btn(btns, "☑  Select All",C_CARD2,    C_BORDER,     self._toggle_select_all)
         _btn(btns, "⬇  Export CSV",C_CARD2,    C_BORDER,     self._inv_export, pad=(0, 0))
 
@@ -960,7 +1145,8 @@ class InventoryApp(ctk.CTk):
         if dlg.result:
             d = dlg.result
             ok = self.db.add_product(d["barcode"], d["name"], d["category"],
-                                     d["quantity"], d["price"], d.get("expiry", "N/A"))
+                                     d["quantity"], d["price"], d.get("expiry", "N/A"),
+                                     user_role=self.user_role)
             if ok:
                 self._inv_refresh(self._search_var.get())
                 self._toast("✅  Product added successfully!")
@@ -980,7 +1166,8 @@ class InventoryApp(ctk.CTk):
         if dlg.result:
             d = dlg.result
             self.db.update_product(d["barcode"], d["name"], d["category"],
-                                   d["quantity"], d["price"], d.get("expiry", "N/A"))
+                                   d["quantity"], d["price"], d.get("expiry", "N/A"),
+                                   user_role=self.user_role)
             self._inv_refresh(self._search_var.get())
             self._toast("✅  Product updated!")
 
@@ -1000,7 +1187,7 @@ class InventoryApp(ctk.CTk):
 
         if messagebox.askyesno("Confirm Delete", msg):
             for bc in targets:
-                self.db.delete_product(bc)
+                self.db.delete_product(bc, user_role=self.user_role)
             self._checked_barcodes.clear()
             self._inv_refresh(self._search_var.get())
             self._toast(f"🗑  {len(targets)} product(s) deleted.")
@@ -1381,6 +1568,9 @@ class InventoryApp(ctk.CTk):
     def _notfound_add(self, barcode: str):
         """Opens Add Product dialog pre-filled with the not-found barcode."""
         self._dismiss_notfound_shortcut()
+        if self.user_role != "admin":
+            messagebox.showerror("Permission Denied", "Only administrators can add new products.")
+            return
         cats = self.db.get_categories()
         # Pre-populate only the barcode field
         stub = {"barcode": barcode, "name": "", "category": "General",
@@ -1392,7 +1582,8 @@ class InventoryApp(ctk.CTk):
         if dlg.result:
             d = dlg.result
             ok = self.db.add_product(d["barcode"], d["name"], d["category"],
-                                     d["quantity"], d["price"], d.get("expiry", "N/A"))
+                                     d["quantity"], d["price"], d.get("expiry", "N/A"),
+                                     user_role=self.user_role)
             if ok:
                 self._toast(f"✅  Product added: {d['name']}")
                 if "inventory" in self._views:
@@ -1793,7 +1984,8 @@ class InventoryApp(ctk.CTk):
 
         _btn(btns, "＋  Add",       C_ACCENT,   C_ACCENT_HVR, self._staff_add)
         _btn(btns, "✏  Edit",      C_CARD2,    C_BORDER,     self._staff_edit)
-        _btn(btns, "🗑  Delete",    "#3B1A1A",  C_DANGER,     self._staff_delete, pad=(0, 0))
+        _btn(btns, "🗑  Delete",    "#3B1A1A",  C_DANGER,     self._staff_delete)
+        _btn(btns, "🔑  User Logins", C_CARD2,  C_BORDER,     self._manage_users, pad=(0, 0))
 
         # Search bar
         sf = ctk.CTkFrame(frame, fg_color="transparent")
@@ -1926,11 +2118,24 @@ class InventoryApp(ctk.CTk):
             else:
                 messagebox.showerror("Error", "Could not delete staff record.")
 
+    def _manage_users(self):
+        dlg = ManageUsersDialog(self, self.db)
+        self.wait_window(dlg)
+
 
 # ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    app = InventoryApp()
-    app.mainloop()
+    # Initialize DB first
+    db = DatabaseManager()
+
+    # Show Login App first
+    login_app = LoginApp(db)
+    login_app.mainloop()
+
+    # If authenticated, launch main app
+    if login_app.authenticated:
+        app = InventoryApp(db, login_app.username, login_app.role)
+        app.mainloop()

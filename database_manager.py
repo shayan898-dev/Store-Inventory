@@ -124,6 +124,21 @@ class DatabaseManager:
                 );
             """)
 
+            # ---- Users table ----
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS users (
+                    username TEXT PRIMARY KEY,
+                    password TEXT NOT NULL,
+                    role     TEXT NOT NULL CHECK(role IN ('admin', 'staff'))
+                );
+            """)
+
+            # Seed default users if empty
+            cur = conn.execute("SELECT COUNT(*) FROM users;")
+            if cur.fetchone()[0] == 0:
+                conn.execute("INSERT INTO users (username, password, role) VALUES ('admin', 'admin', 'admin');")
+                conn.execute("INSERT INTO users (username, password, role) VALUES ('staff', 'staff', 'staff');")
+
             conn.commit()
 
             # ---- Migration: add new columns to existing DBs ----
@@ -232,11 +247,14 @@ class DatabaseManager:
     # ------------------------------------------------------------------
 
     def add_product(self, barcode: str, name: str, category: str,
-                    quantity: int, price: float, expiry: str = "N/A") -> bool:
+                    quantity: int, price: float, expiry: str = "N/A", user_role: str = "staff") -> bool:
         """
         Inserts a new product.
         Returns True on success, False if barcode already exists.
         """
+        if user_role != "admin":
+            print("[DB] Access Denied: only admins can add products.")
+            return False
         sql = """
             INSERT INTO products (barcode, name, category, quantity, price, expiry, timestamp)
             VALUES (?, ?, ?, ?, ?, ?, strftime('%Y-%m-%d %H:%M:%S','now','localtime'));
@@ -251,8 +269,11 @@ class DatabaseManager:
             return False   # Duplicate barcode
 
     def update_product(self, barcode: str, name: str, category: str,
-                       quantity: int, price: float, expiry: str = "N/A") -> bool:
+                       quantity: int, price: float, expiry: str = "N/A", user_role: str = "staff") -> bool:
         """Updates an existing product. Returns True if a row was changed."""
+        if user_role != "admin":
+            print("[DB] Access Denied: only admins can update products.")
+            return False
         sql = """
             UPDATE products
             SET name=?, category=?, quantity=?, price=?, expiry=?,
@@ -317,8 +338,11 @@ class DatabaseManager:
             product["quantity"] = new_qty
             return "ok", product
 
-    def delete_product(self, barcode: str) -> bool:
+    def delete_product(self, barcode: str, user_role: str = "staff") -> bool:
         """Permanently removes a product. Returns True if deleted."""
+        if user_role != "admin":
+            print("[DB] Access Denied: only admins can delete products.")
+            return False
         with self._connect() as conn:
             cur = conn.execute("DELETE FROM products WHERE barcode=?;", (barcode.strip(),))
             conn.commit()
@@ -469,4 +493,45 @@ class DatabaseManager:
             return cur.rowcount > 0
         except Exception as e:
             print(f"[DB] Error deleting staff: {e}")
+            return False
+
+    # ------------------------------------------------------------------
+    # User Accounts (RBAC) — Read & Write
+    # ------------------------------------------------------------------
+
+    def authenticate_user(self, username: str, password: str) -> Optional[str]:
+        """Verifies credentials. Returns the user's role ('admin' or 'staff') if valid, else None."""
+        sql = "SELECT role FROM users WHERE username = ? AND password = ?;"
+        with self._connect() as conn:
+            row = conn.execute(sql, (username.strip().lower(), password.strip())).fetchone()
+            return row["role"] if row else None
+
+    def get_all_users(self) -> list[dict]:
+        """Returns all login accounts sorted alphabetically."""
+        sql = "SELECT username, role FROM users ORDER BY username ASC;"
+        with self._connect() as conn:
+            return [dict(r) for r in conn.execute(sql).fetchall()]
+
+    def add_user(self, username: str, password: str, role: str) -> bool:
+        """Adds a new user account."""
+        sql = "INSERT INTO users (username, password, role) VALUES (?, ?, ?);"
+        try:
+            with self._connect() as conn:
+                conn.execute(sql, (username.strip().lower(), password.strip(), role.strip().lower()))
+                conn.commit()
+            return True
+        except Exception as e:
+            print(f"[DB] Error adding user: {e}")
+            return False
+
+    def delete_user(self, username: str) -> bool:
+        """Deletes an existing user account."""
+        sql = "DELETE FROM users WHERE username = ?;"
+        try:
+            with self._connect() as conn:
+                conn.execute(sql, (username.strip().lower(),))
+                conn.commit()
+            return True
+        except Exception as e:
+            print(f"[DB] Error deleting user: {e}")
             return False

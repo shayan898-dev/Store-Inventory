@@ -110,6 +110,30 @@ The tables have been refactored for readability:
 - It includes automatic schema migration logic. When the app is launched, it checks the database structure:
   - Creates the `staff` table if it doesn't exist.
   - Alters the `products` table to append the `expiry` column (defaulting to `"N/A"`) without losing any of your existing products.
+  - Creates the `users` login table if it doesn't exist.
 
 ### Removed Mobile Bridge Backend
 - Removed the Flask and QR Code server modules to streamline performance. The app runs completely locally on your system, avoiding potential port conflicts or LAN network issues.
+
+---
+
+## 5. Role-Based Access Control (RBAC) (New)
+
+The application includes a dual-role access control system:
+
+### User Roles
+1. **Admin**:
+   - Full access to all modules, including `Inventory`, `Sales`, `Restock`, `Reports`, and `Staff`.
+   - Authorized to add, edit, or delete inventory.
+   - Authorized to manage user logins using the **User Logins** manager.
+2. **Staff**:
+   - Restricted access. Can only view the inventory and process checkout transactions in the **Sales** tab.
+   - Auto-hides administrative sections (`Restock`, `Reports`, `Staff`) from the sidebar.
+   - Disables/hides addition, editing, and deletion buttons in the Inventory view.
+
+### Security Layers
+- **Frontend Verification**: UI elements, buttons, and views are dynamically shown or hidden based on the active user's role.
+- **Backend Verification**: Database CRUD functions inspect the caller's role (defaulting to restricted `"staff"` privileges) to block unauthorized database manipulations.
+- **Default Seed Accounts**:
+  - Admin login: `admin` / `admin`
+  - Staff login: `staff` / `staff`
