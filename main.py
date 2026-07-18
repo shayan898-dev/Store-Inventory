@@ -146,6 +146,16 @@ class FlashEntry(ctk.CTkEntry):
     # Revert colour — grey when idle (high-contrast spec: subtle grey)
     IDLE_BORDER = C_BORDER
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        vcmd = self.register(self._validate_int)
+        self.configure(validate="key", validatecommand=(vcmd, "%P"))
+
+    def _validate_int(self, P):
+        if P == "":
+            return True
+        return P.isdigit()
+
     def flash(self, success: bool):
         """Legacy helper used by Restock view."""
         color = "#28a745" if success else "#dc3545"
@@ -184,6 +194,10 @@ class ProductDialog(ctk.CTkToplevel):
 
         cats = categories or CATEGORIES
 
+        # Register validations
+        vcmd_int = self.register(self._validate_int)
+        vcmd_float = self.register(self._validate_float)
+
         # Title label
         ctk.CTkLabel(self, text=title, font=(FONT, 18, "bold")).pack(pady=(24, 14))
 
@@ -199,7 +213,8 @@ class ProductDialog(ctk.CTkToplevel):
         bc_row = ctk.CTkFrame(form, fg_color="transparent")
         bc_row.pack(fill="x")
         self.e_barcode = ctk.CTkEntry(bc_row, height=38, font=(FONT, 13),
-                                       fg_color=C_CARD2, border_color=C_BORDER)
+                                       fg_color=C_CARD2, border_color=C_BORDER,
+                                       validate="key", validatecommand=(vcmd_int, "%P"))
         self.e_barcode.pack(side="left", fill="x", expand=True, padx=(0, 8))
 
         # ---- Name ----
@@ -222,13 +237,15 @@ class ProductDialog(ctk.CTkToplevel):
         # ---- Quantity ----
         _lbl("Quantity *")
         self.e_qty = ctk.CTkEntry(form, height=38, font=(FONT, 13),
-                                   fg_color=C_CARD2, border_color=C_BORDER)
+                                   fg_color=C_CARD2, border_color=C_BORDER,
+                                   validate="key", validatecommand=(vcmd_int, "%P"))
         self.e_qty.pack(fill="x")
 
         # ---- Price ----
         _lbl("Price (PKR) *")
         self.e_price = ctk.CTkEntry(form, height=38, font=(FONT, 13),
-                                     fg_color=C_CARD2, border_color=C_BORDER)
+                                     fg_color=C_CARD2, border_color=C_BORDER,
+                                     validate="key", validatecommand=(vcmd_float, "%P"))
         self.e_price.pack(fill="x")
 
         # ---- Expiry Date ----
@@ -253,6 +270,7 @@ class ProductDialog(ctk.CTkToplevel):
         )
         self.e_expiry_day.set(f"{today.day:02d}")
         self.e_expiry_day.pack(side="left", padx=(0, 4), fill="x", expand=True)
+        self.e_expiry_day._entry.configure(validate="key", validatecommand=(vcmd_int, "%P"))
         
         self.e_expiry_month = ctk.CTkComboBox(
             self.exp_frame, values=self.months_names, width=95, height=34, font=(FONT, 12),
@@ -278,6 +296,7 @@ class ProductDialog(ctk.CTkToplevel):
         )
         self.e_expiry_year.set(str(current_year))
         self.e_expiry_year.pack(side="left", padx=(4, 0), fill="x", expand=True)
+        self.e_expiry_year._entry.configure(validate="key", validatecommand=(vcmd_int, "%P"))
 
         # Pre-fill when editing
         self._is_edit = bool(product)
@@ -428,6 +447,20 @@ class ProductDialog(ctk.CTkToplevel):
                        "quantity": qty, "price": price, "expiry": expiry}
         self.destroy()
 
+    def _validate_int(self, P):
+        if P == "":
+            return True
+        return P.isdigit()
+
+    def _validate_float(self, P):
+        if P == "" or P == ".":
+            return True
+        try:
+            float(P)
+            return True
+        except ValueError:
+            return False
+
 
 class RestockQtyDialog(ctk.CTkToplevel):
     """Small modal asking how many units to restock."""
@@ -450,9 +483,10 @@ class RestockQtyDialog(ctk.CTkToplevel):
         frm.pack(fill="x", padx=32)
         ctk.CTkLabel(frm, text="Units to add:", font=(FONT, 12),
                      text_color=C_TEXT_DIM, anchor="w").pack(fill="x")
+        vcmd_int = self.register(lambda P: P == "" or P.isdigit())
         self.qty_entry = ctk.CTkEntry(frm, height=40, font=(FONT, 16, "bold"),
                                        fg_color=C_CARD2, border_color=C_ACCENT,
-                                       justify="center")
+                                       justify="center", validate="key", validatecommand=(vcmd_int, "%P"))
         self.qty_entry.insert(0, "1")
         self.qty_entry.pack(fill="x", pady=4)
         self.qty_entry.focus_set()
@@ -511,9 +545,10 @@ class SaleQtyDialog(ctk.CTkToplevel):
         frm.pack(fill="x", padx=32)
         ctk.CTkLabel(frm, text=f"Quantity (max {max_qty}):", font=(FONT, 12),
                      text_color=C_TEXT_DIM, anchor="w").pack(fill="x")
+        vcmd_int = self.register(lambda P: P == "" or P.isdigit())
         self.qty_entry = ctk.CTkEntry(frm, height=40, font=(FONT, 16, "bold"),
                                        fg_color=C_CARD2, border_color=C_ACCENT,
-                                       justify="center")
+                                       justify="center", validate="key", validatecommand=(vcmd_int, "%P"))
         self.qty_entry.insert(0, "1")
         self.qty_entry.pack(fill="x", pady=4)
         self.qty_entry.focus_set()
@@ -561,6 +596,10 @@ class StaffDialog(ctk.CTkToplevel):
         self.grab_set()
         self.focus_set()
 
+        # Register validations
+        vcmd_int = self.register(lambda P: P == "" or P.isdigit())
+        vcmd_float = self.register(self._validate_float)
+
         # Title label
         ctk.CTkLabel(self, text=title, font=(FONT, 18, "bold")).pack(pady=(24, 14))
 
@@ -580,7 +619,8 @@ class StaffDialog(ctk.CTkToplevel):
         # ---- Phone ----
         _lbl("Phone Number")
         self.e_phone = ctk.CTkEntry(form, height=38, font=(FONT, 13),
-                                     fg_color=C_CARD2, border_color=C_BORDER)
+                                     fg_color=C_CARD2, border_color=C_BORDER,
+                                     validate="key", validatecommand=(vcmd_int, "%P"))
         self.e_phone.pack(fill="x")
 
         # ---- Role (combobox) ----
@@ -610,7 +650,8 @@ class StaffDialog(ctk.CTkToplevel):
         # ---- Salary ----
         _lbl("Salary")
         self.e_salary = ctk.CTkEntry(form, height=38, font=(FONT, 13),
-                                      fg_color=C_CARD2, border_color=C_BORDER)
+                                      fg_color=C_CARD2, border_color=C_BORDER,
+                                      validate="key", validatecommand=(vcmd_float, "%P"))
         self.e_salary.pack(fill="x")
 
         # Pre-fill when editing
@@ -634,6 +675,15 @@ class StaffDialog(ctk.CTkToplevel):
 
         self.e_name.focus_set()
         self.bind("<Return>", lambda e: self._save())
+
+    def _validate_float(self, P):
+        if P == "" or P == ".":
+            return True
+        try:
+            float(P)
+            return True
+        except ValueError:
+            return False
 
     def _save(self):
         name   = self.e_name.get().strip()
@@ -691,13 +741,11 @@ class LoginApp(ctk.CTk):
         ctk.CTkLabel(form, text="Username", font=(FONT, 12), text_color=C_TEXT_DIM, anchor="w").pack(fill="x", pady=(8, 2))
         self.e_user = ctk.CTkEntry(form, height=40, font=(FONT, 13), fg_color=C_CARD, border_color=C_BORDER)
         self.e_user.pack(fill="x")
-        self.e_user.insert(0, "admin")
 
         # Password
         ctk.CTkLabel(form, text="Password", font=(FONT, 12), text_color=C_TEXT_DIM, anchor="w").pack(fill="x", pady=(12, 2))
         self.e_pass = ctk.CTkEntry(form, height=40, show="*", font=(FONT, 13), fg_color=C_CARD, border_color=C_BORDER)
         self.e_pass.pack(fill="x")
-        self.e_pass.insert(0, "admin")
 
         # Submit button
         self.btn_login = ctk.CTkButton(self, text="Sign In", fg_color=C_ACCENT, hover_color=C_ACCENT_HVR,
