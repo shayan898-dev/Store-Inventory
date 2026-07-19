@@ -411,6 +411,10 @@ class DatabaseManager:
         with self._connect() as conn:
             return [dict(r) for r in conn.execute(sql, (limit,)).fetchall()]
 
+    def get_restock_log(self, limit: int = 50) -> list[dict]:
+        """Alias for get_recent_restocks."""
+        return self.get_recent_restocks(limit)
+
     # ------------------------------------------------------------------
     # Export
     # ------------------------------------------------------------------
@@ -535,3 +539,17 @@ class DatabaseManager:
         except Exception as e:
             print(f"[DB] Error deleting user: {e}")
             return False
+
+    def process_refund(self, barcode: str, qty_returned: int) -> tuple[bool, Optional[dict]]:
+        """
+        Increases stock for a returned item and logs the refund event.
+        Returns (success_boolean, updated_product_dict).
+        """
+        if qty_returned <= 0:
+            return False, None
+
+        status, product = self.update_stock(barcode.strip(), qty_returned)
+        if status == "ok" and product:
+            self.log_restock(product["barcode"], product["name"], qty_returned, product["quantity"])
+            return True, product
+        return False, None

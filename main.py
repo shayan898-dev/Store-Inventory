@@ -49,7 +49,7 @@ C_ROW_NORMAL = "#1C2128"
 FONT         = "Segoe UI"
 
 # Treeview columns (check column is the tick-box selector)
-TV_COLS = ("check", "name", "category", "quantity", "price", "expiry", "barcode")
+TV_COLS = ("check", "name", "quantity", "price", "expiry", "barcode")
 
 # Preset categories for the dropdown
 CATEGORIES = [
@@ -146,16 +146,6 @@ class FlashEntry(ctk.CTkEntry):
     # Revert colour — grey when idle (high-contrast spec: subtle grey)
     IDLE_BORDER = C_BORDER
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        vcmd = self.register(self._validate_int)
-        self.configure(validate="key", validatecommand=(vcmd, "%P"))
-
-    def _validate_int(self, P):
-        if P == "":
-            return True
-        return P.isdigit()
-
     def flash(self, success: bool):
         """Legacy helper used by Restock view."""
         color = "#28a745" if success else "#dc3545"
@@ -186,7 +176,7 @@ class ProductDialog(ctk.CTkToplevel):
         super().__init__(parent)
         self.result = None
         self.title(title)
-        self.geometry("440x650")
+        self.geometry("440x590")
         self.resizable(False, False)
         self.configure(fg_color=C_CARD)
         self.grab_set()
@@ -222,17 +212,6 @@ class ProductDialog(ctk.CTkToplevel):
         self.e_name = ctk.CTkEntry(form, height=38, font=(FONT, 13),
                                     fg_color=C_CARD2, border_color=C_BORDER)
         self.e_name.pack(fill="x")
-
-        # ---- Category (combo box) ----
-        _lbl("Category")
-        self.e_category = ctk.CTkComboBox(
-            form, values=cats, height=38, font=(FONT, 13),
-            fg_color=C_CARD2, border_color=C_BORDER,
-            button_color=C_CARD2, button_hover_color=C_BORDER,
-            dropdown_fg_color=C_CARD2,
-        )
-        self.e_category.set(cats[0])
-        self.e_category.pack(fill="x")
 
         # ---- Quantity ----
         _lbl("Quantity *")
@@ -302,13 +281,8 @@ class ProductDialog(ctk.CTkToplevel):
         self._is_edit = bool(product)
         if product:
             self.e_barcode.insert(0, product.get("barcode", ""))
-            self.e_barcode.configure(state="disabled")   # PK — immutable
             self.e_name.insert(0, product.get("name", ""))
-            cat = product.get("category", "General")
-            if cat not in cats:
-                cats.insert(0, cat)
-                self.e_category.configure(values=cats)
-            self.e_category.set(cat)
+            self.e_barcode.configure(state="disabled")   # PK — immutable
             self.e_qty.insert(0, str(product.get("quantity", 0)))
             self.e_price.insert(0, str(product.get("price", 0.0)))
             
@@ -383,7 +357,7 @@ class ProductDialog(ctk.CTkToplevel):
     def _save(self):
         barcode   = self.e_barcode.get().strip()
         name      = self.e_name.get().strip()
-        category  = self.e_category.get().strip() or "General"
+        category  = "General"
         qty_raw   = self.e_qty.get().strip()
         price_raw = self.e_price.get().strip()
 
@@ -513,6 +487,65 @@ class RestockQtyDialog(ctk.CTkToplevel):
             self.destroy()
         except (ValueError, AssertionError):
             messagebox.showerror("Invalid", "Enter a positive whole number.", parent=self)
+
+
+class RefundQtyDialog(ctk.CTkToplevel):
+    """Small modal asking how many units of the product are being returned."""
+
+    def __init__(self, parent, product: dict):
+        super().__init__(parent)
+        self.result = None
+        self.title("Refund Quantity")
+        self.geometry("340x240")
+        self.resizable(False, False)
+        self.configure(fg_color=C_CARD)
+
+        self.update_idletasks()
+        try:
+            x = parent.winfo_x() + (parent.winfo_width() // 2) - 170
+            y = parent.winfo_y() + (parent.winfo_height() // 2) - 120
+            self.geometry(f"+{x}+{y}")
+        except Exception:
+            pass
+
+        self.grab_set()
+        self.focus_set()
+
+        ctk.CTkLabel(self, text="↩  Process Refund", font=(FONT, 16, "bold")).pack(pady=(20, 4))
+        ctk.CTkLabel(self, text=f"{product['name']} (Stock: {product['quantity']})", font=(FONT, 12),
+                     text_color=C_TEXT_DIM).pack(pady=(0, 12))
+
+        frm = ctk.CTkFrame(self, fg_color="transparent")
+        frm.pack(fill="x", padx=32)
+        ctk.CTkLabel(frm, text="Quantity returned by customer:", font=(FONT, 12),
+                     text_color=C_TEXT_DIM, anchor="w").pack(fill="x")
+        vcmd_int = self.register(lambda P: P == "" or P.isdigit())
+        self.qty_entry = ctk.CTkEntry(frm, height=40, font=(FONT, 16, "bold"),
+                                       fg_color=C_CARD2, border_color=C_ACCENT,
+                                       justify="center", validate="key", validatecommand=(vcmd_int, "%P"))
+        self.qty_entry.insert(0, "1")
+        self.qty_entry.pack(fill="x", pady=4)
+        self.qty_entry.focus_set()
+        self.qty_entry.select_range(0, "end")
+
+        ctk.CTkButton(self, text="↩  Confirm Return", fg_color=C_ACCENT,
+                      hover_color=C_ACCENT_HVR, font=(FONT, 13, "bold"),
+                      command=self._confirm).pack(pady=16, padx=32, fill="x")
+        self.bind("<Return>", lambda e: self._confirm())
+
+    def _confirm(self):
+        try:
+            qty_str = self.qty_entry.get().strip()
+            qty = int(qty_str)
+            assert qty > 0
+            self.result = qty
+            self.destroy()
+        except (ValueError, AssertionError):
+            messagebox.showerror("Invalid Quantity", "Please enter a valid quantity greater than 0.", parent=self)
+            self.qty_entry.delete(0, "end")
+            self.qty_entry.insert(0, "1")
+            self.qty_entry.focus_set()
+            self.qty_entry.select_range(0, "end")
 
 class SaleQtyDialog(ctk.CTkToplevel):
     """Small modal asking how many units to add to the bill."""
@@ -952,6 +985,12 @@ class InventoryApp(ctk.CTk):
             self._cam_status_restock.configure(text="Ready for Barcode2win...", text_color=C_SUCCESS)
             self.after(4000, lambda: self._cam_status_restock.configure(text=""))
 
+    def _start_b2w_refund(self):
+        self._refund_entry.focus_set()
+        if hasattr(self, "_cam_status_refund") and self._cam_status_refund:
+            self._cam_status_refund.configure(text="Ready for Barcode2win...", text_color=C_SUCCESS)
+            self.after(4000, lambda: self._cam_status_refund.configure(text=""))
+
     # ------------------------------------------------------------------
     # Sidebar
     # ------------------------------------------------------------------
@@ -975,6 +1014,7 @@ class InventoryApp(ctk.CTk):
         nav_items = [
             ("inventory", "📦", "Inventory"),
             ("sales",     "🛒", "Sales"),
+            ("refund",    "↩", "Refund"),
         ]
         if self.user_role == "admin":
             nav_items.extend([
@@ -1027,7 +1067,7 @@ class InventoryApp(ctk.CTk):
             messagebox.showerror("Permission Denied", "You do not have permission to access this section.")
             return
 
-        if self._active_view in ("sales", "restock"):
+        if self._active_view in ("sales", "restock", "refund"):
             self._scan_focus_active = False
 
         for n, b in self._nav_btns.items():
@@ -1042,7 +1082,7 @@ class InventoryApp(ctk.CTk):
         self._views[name].pack(fill="both", expand=True)
         self._active_view = name
 
-        if name in ("sales", "restock"):
+        if name in ("sales", "restock", "refund"):
             self._scan_focus_active = True
             self._scan_focus_tick()
 
@@ -1052,6 +1092,8 @@ class InventoryApp(ctk.CTk):
             self._reports_refresh()
         elif name == "sales":
             self._sales_load_log()
+        elif name == "refund":
+            self._refund_load_log()
         elif name == "restock":
             self._restock_load_log()
         elif name == "staff":
@@ -1117,7 +1159,6 @@ class InventoryApp(ctk.CTk):
         cols = {
             "check":    ("☐",            40,  "center"),
             "name":     ("Product Name", 260, "center"),
-            "category": ("Category",     120, "center"),
             "quantity": ("Qty",           65, "center"),
             "price":    ("Price (PKR)",  140, "center"),
             "expiry":   ("Expiry Date",  130, "center"),
@@ -1162,7 +1203,6 @@ class InventoryApp(ctk.CTk):
             chk = "☑" if p["barcode"] in self._checked_barcodes else "☐"
             self._inv_tree.insert("", "end", iid=p["barcode"], tags=(tag,),
                                    values=(chk, p["name"],
-                                           p.get("category", "General"),
                                            p["quantity"], format_price(p["price"]),
                                            p.get("expiry", "N/A"), p["barcode"]))
 
@@ -1368,13 +1408,13 @@ class InventoryApp(ctk.CTk):
                                   border_width=1, border_color=C_BORDER)
         scan_card.pack(fill="x", pady=(0, 12))
 
-        ctk.CTkLabel(scan_card, text="READY TO SCAN",
+        ctk.CTkLabel(scan_card, text="READY TO SCAN / SEARCH BY NAME",
                      font=(FONT, 10, "bold"), text_color=C_TEXT_DIM).pack(pady=(16, 4))
 
         # Idle border is subtle grey — flashes green/red on result
         self._sale_entry = FlashEntry(
             scan_card,
-            placeholder_text="Barcode ready...",
+            placeholder_text="Scan barcode or type name...",
             height=64,
             font=(FONT, 22, "bold"),
             fg_color=C_CARD2,
@@ -1385,6 +1425,36 @@ class InventoryApp(ctk.CTk):
         self._sale_entry.pack(fill="x", padx=20, pady=(0, 10))
         self._sale_entry.bind("<Return>", self._process_sale)
         self._sale_entry.bind("<KeyRelease>", self._on_sale_key_release)
+        self._sale_entry.bind("<Down>", lambda e: self.sales_results_tree.focus_set() if self.results_frame.winfo_manager() else None)
+
+        # Search results frame
+        self.results_frame = ctk.CTkFrame(left, fg_color=C_CARD, corner_radius=14,
+                                           border_width=1, border_color=C_BORDER)
+        # Hidden by default
+
+        ctk.CTkLabel(self.results_frame, text="🔍  Search Results", font=(FONT, 11, "bold"), text_color=C_TEXT_DIM).pack(pady=(8, 2))
+
+        vsb = ttk.Scrollbar(self.results_frame)
+        vsb.pack(side="right", fill="y")
+
+        self.sales_results_tree = ttk.Treeview(
+            self.results_frame, columns=("name", "price", "stock"), show="headings",
+            style="T.Treeview", yscrollcommand=vsb.set, selectmode="browse", height=5
+        )
+        vsb.configure(command=self.sales_results_tree.yview)
+
+        self.sales_results_tree.heading("name", text="Product Name", anchor="center")
+        self.sales_results_tree.heading("price", text="Price", anchor="center")
+        self.sales_results_tree.heading("stock", text="Stock", anchor="center")
+
+        self.sales_results_tree.column("name", width=200, anchor="center")
+        self.sales_results_tree.column("price", width=80, anchor="center")
+        self.sales_results_tree.column("stock", width=60, anchor="center")
+
+        self.sales_results_tree.pack(fill="both", expand=True, padx=8, pady=(2, 8))
+
+        self.sales_results_tree.bind("<Double-1>", self._on_result_double_click)
+        self.sales_results_tree.bind("<Return>", self._on_result_double_click)
 
 
 
@@ -1476,26 +1546,71 @@ class InventoryApp(ctk.CTk):
     # ── Core sale processor ───────────────────────────────────────────
 
     def _on_sale_key_release(self, event):
-        if event.keysym in ("Return", "Tab"):
+        if event.keysym in ("Return", "Tab", "Down", "Up"):
             return
         if hasattr(self, "_sale_debounce") and self._sale_debounce:
             self.after_cancel(self._sale_debounce)
-        self._sale_debounce = self.after(600, self._check_auto_sale)
+        self._sale_debounce = self.after(300, self._check_sales_search)
 
-    def _check_auto_sale(self):
-        raw = self._sale_entry.get().strip()
-        if len(raw) < 2: return
-        product = self.db.find_by_barcode(raw)
-        if product or len(raw) >= 5:
+    def _check_sales_search(self):
+        query = self._sale_entry.get().strip()
+        if not query:
+            self._hide_sales_results()
+            return
+
+        # 1. Check if it's an exact barcode match
+        product = self.db.find_by_barcode(query)
+        if product:
+            # Clear entry and process automatically
             self._sale_entry.delete(0, "end")
-            self._process_sale(barcode=raw)
+            self._hide_sales_results()
+            self._process_sale(barcode=query)
+            return
+
+        # 2. Otherwise search products by name
+        results = self.db.search_products(query)
+        if results:
+            self._show_sales_results(results)
+        else:
+            self._hide_sales_results()
+
+    def _show_sales_results(self, products):
+        if not self.results_frame.winfo_manager():
+            self.results_frame.pack(fill="both", expand=False, pady=(0, 12))
+
+        for row in self.sales_results_tree.get_children():
+            self.sales_results_tree.delete(row)
+
+        for p in products:
+            price_val = f"{p['price']:.2f}"
+            self.sales_results_tree.insert("", "end", iid=p["barcode"],
+                                           values=(p["name"], price_val, p["quantity"]))
+
+    def _hide_sales_results(self):
+        if self.results_frame.winfo_manager():
+            self.results_frame.pack_forget()
+
+    def _on_result_double_click(self, event=None):
+        sel = self.sales_results_tree.selection()
+        if not sel:
+            return
+        barcode = sel[0]
+        self._sale_entry.delete(0, "end")
+        self._hide_sales_results()
+        self._process_sale(barcode=barcode)
 
     def _process_sale(self, _=None, barcode: str | None = None):
+        if hasattr(self, "_sale_debounce") and self._sale_debounce:
+            self.after_cancel(self._sale_debounce)
+            self._sale_debounce = None
+
         if barcode is None:
             raw = self._sale_entry.get()
             self._sale_entry.delete(0, "end")
         else:
             raw = barcode
+
+        self._hide_sales_results()
 
         bc = _sanitise_barcode(raw)
         if len(bc) < 2:
@@ -1736,6 +1851,266 @@ class InventoryApp(ctk.CTk):
         self._process_sale(event)
 
 
+    # ==================================================================
+    #  REFUND VIEW  —  Product Refund & Returns Interface
+    # ==================================================================
+
+    def _build_refund_view(self) -> ctk.CTkFrame:
+        frame = ctk.CTkFrame(self.content, fg_color=C_BG, corner_radius=0)
+
+        # ── Header ────────────────────────────────────────────────────
+        hdr = ctk.CTkFrame(frame, fg_color="transparent")
+        hdr.pack(fill="x", padx=28, pady=(24, 0))
+        ctk.CTkLabel(hdr, text="↩  Product Refund & Returns",
+                     font=(FONT, 22, "bold"), text_color=C_TEXT).pack(side="left")
+        ctk.CTkLabel(hdr, text="● RETURN MODE",
+                     font=(FONT, 11, "bold"), text_color=C_ACCENT).pack(side="left", padx=12)
+
+        # ── Two-panel body ────────────────────────────────────────────
+        body = ctk.CTkFrame(frame, fg_color="transparent")
+        body.pack(fill="both", expand=True, padx=20, pady=14)
+        body.columnconfigure(0, weight=5)
+        body.columnconfigure(1, weight=6)
+        body.rowconfigure(0, weight=1)
+
+        # ════════════ LEFT PANEL ══════════════════════════════════════
+        left = ctk.CTkFrame(body, fg_color="transparent")
+        left.grid(row=0, column=0, sticky="nsew", padx=(0, 10))
+
+        # ── Focus-zone: scan entry ────────────────────────────────────
+        scan_card = ctk.CTkFrame(left, fg_color=C_CARD, corner_radius=14,
+                                  border_width=1, border_color=C_BORDER)
+        scan_card.pack(fill="x", pady=(0, 12))
+
+        ctk.CTkLabel(scan_card, text="SCAN BARCODE OR TYPE NAME TO REFUND",
+                     font=(FONT, 10, "bold"), text_color=C_TEXT_DIM).pack(pady=(16, 4))
+
+        self._refund_entry = FlashEntry(
+            scan_card,
+            placeholder_text="Scan barcode or type name...",
+            height=64,
+            font=(FONT, 22, "bold"),
+            fg_color=C_CARD2,
+            border_color=C_BORDER,
+            border_width=2,
+            justify="center",
+        )
+        self._refund_entry.pack(fill="x", padx=20, pady=(0, 10))
+        self._refund_entry.bind("<Return>", self._process_refund)
+        self._refund_entry.bind("<KeyRelease>", self._on_refund_key_release)
+        self._refund_entry.bind("<Down>", lambda e: self.refund_results_tree.focus_set() if self.refund_results_frame.winfo_manager() else None)
+
+        # Search results frame for refund name search
+        self.refund_results_frame = ctk.CTkFrame(left, fg_color=C_CARD, corner_radius=14,
+                                                 border_width=1, border_color=C_BORDER)
+
+        ctk.CTkLabel(self.refund_results_frame, text="🔍  Select Product to Return", font=(FONT, 11, "bold"), text_color=C_TEXT_DIM).pack(pady=(8, 2))
+
+        vsb = ttk.Scrollbar(self.refund_results_frame)
+        vsb.pack(side="right", fill="y")
+
+        self.refund_results_tree = ttk.Treeview(
+            self.refund_results_frame, columns=("name", "price", "stock"), show="headings",
+            style="T.Treeview", yscrollcommand=vsb.set, selectmode="browse", height=5
+        )
+        vsb.configure(command=self.refund_results_tree.yview)
+
+        self.refund_results_tree.heading("name", text="Product Name", anchor="center")
+        self.refund_results_tree.heading("price", text="Price", anchor="center")
+        self.refund_results_tree.heading("stock", text="Current Stock", anchor="center")
+
+        self.refund_results_tree.column("name", width=200, anchor="center")
+        self.refund_results_tree.column("price", width=80, anchor="center")
+        self.refund_results_tree.column("stock", width=80, anchor="center")
+
+        self.refund_results_tree.pack(fill="both", expand=True, padx=8, pady=(2, 8))
+
+        self.refund_results_tree.bind("<Double-1>", self._on_refund_result_double_click)
+        self.refund_results_tree.bind("<Return>", self._on_refund_result_double_click)
+
+        # ── Live Refund Card ─────────────────────────────────────────
+        self._rf_card = ctk.CTkFrame(left, fg_color=C_CARD, corner_radius=14,
+                                      border_width=1, border_color=C_BORDER)
+        self._rf_card.pack(fill="both", expand=True)
+
+        ctk.CTkLabel(self._rf_card, text="", font=(FONT, 11), text_color=C_TEXT_DIM).pack(pady=(20, 0))
+        self._rf_status = ctk.CTkLabel(self._rf_card,
+                                       text="Scan or select a product for refund",
+                                       font=(FONT, 13), text_color=C_TEXT_DIM)
+        self._rf_status.pack(pady=4)
+
+        self._rf_name = ctk.CTkLabel(self._rf_card, text="—",
+                                     font=(FONT, 20, "bold"), text_color=C_TEXT,
+                                     wraplength=320)
+        self._rf_name.pack(pady=6)
+
+        self._rf_price = ctk.CTkLabel(self._rf_card, text="",
+                                      font=(FONT, 24, "bold"), text_color=C_ACCENT)
+        self._rf_price.pack(pady=2)
+
+        self._rf_stock = ctk.CTkLabel(self._rf_card, text="",
+                                      font=(FONT, 13), text_color=C_TEXT_DIM)
+        self._rf_stock.pack(pady=(2, 20))
+
+        # ════════════ RIGHT PANEL ═════════════════════════════════════
+        right = ctk.CTkFrame(body, fg_color=C_CARD, corner_radius=14,
+                             border_width=1, border_color=C_BORDER)
+        right.grid(row=0, column=1, sticky="nsew", padx=(10, 0))
+
+        log_hdr = ctk.CTkFrame(right, fg_color="transparent")
+        log_hdr.pack(fill="x", padx=20, pady=(16, 8))
+        ctk.CTkLabel(log_hdr, text="📋  Return History Log",
+                     font=(FONT, 14, "bold"), text_color=C_TEXT).pack(side="left")
+        ctk.CTkLabel(log_hdr, text="Recent Returns",
+                     font=(FONT, 11), text_color=C_TEXT_DIM).pack(side="right")
+
+        vsb_rf = ttk.Scrollbar(right)
+        vsb_rf.pack(side="right", fill="y", padx=(0, 4), pady=(0, 16))
+
+        rf_cols = ("time", "barcode", "name", "qty", "stock")
+        self._rf_tree = ttk.Treeview(
+            right, columns=rf_cols, show="headings",
+            style="T.Treeview", yscrollcommand=vsb_rf.set, selectmode="browse"
+        )
+        vsb_rf.configure(command=self._rf_tree.yview)
+
+        cols = {
+            "time":    ("Time",         90,  "center"),
+            "barcode": ("Barcode",      130, "center"),
+            "name":    ("Product Name", 180, "center"),
+            "qty":     ("Returned",     80,  "center"),
+            "stock":   ("New Stock",    80,  "center"),
+        }
+        for col, (heading, width, anchor) in cols.items():
+            self._rf_tree.heading(col, text=heading, anchor="center")
+            self._rf_tree.column(col, width=width, minwidth=30, anchor="center")
+
+        self._rf_tree.tag_configure("odd",  background=C_CARD)
+        self._rf_tree.tag_configure("even", background=C_CARD2)
+        self._rf_tree.pack(fill="both", expand=True, padx=(16, 0), pady=(0, 16))
+
+        self._refund_load_log()
+        return frame
+
+    def _refund_load_log(self):
+        if not hasattr(self, "_rf_tree"):
+            return
+        for item in self._rf_tree.get_children():
+            self._rf_tree.delete(item)
+
+        rows = self.db.get_recent_restocks(limit=50)
+        for idx, r in enumerate(rows):
+            t_str = r["timestamp"].split(" ")[1] if " " in r["timestamp"] else r["timestamp"]
+            tag = "even" if idx % 2 == 0 else "odd"
+            self._rf_tree.insert("", "end",
+                                  values=(t_str, r["barcode"], r["name"],
+                                          f"+{r['quantity_added']}", r["remaining_qty"]),
+                                  tags=(tag,))
+
+    def _on_refund_key_release(self, event):
+        if event.keysym in ("Return", "Tab", "Down", "Up"):
+            return
+        if hasattr(self, "_refund_debounce") and self._refund_debounce:
+            self.after_cancel(self._refund_debounce)
+        self._refund_debounce = self.after(300, self._check_refund_search)
+
+    def _check_refund_search(self):
+        query = self._refund_entry.get().strip()
+        if not query:
+            self._hide_refund_results()
+            return
+
+        product = self.db.find_by_barcode(query)
+        if product:
+            self._refund_entry.delete(0, "end")
+            self._hide_refund_results()
+            self._process_refund(barcode=query)
+            return
+
+        results = self.db.search_products(query)
+        if results:
+            self._show_refund_results(results)
+        else:
+            self._hide_refund_results()
+
+    def _show_refund_results(self, products):
+        if not self.refund_results_frame.winfo_manager():
+            self.refund_results_frame.pack(fill="both", expand=False, pady=(0, 12))
+
+        for row in self.refund_results_tree.get_children():
+            self.refund_results_tree.delete(row)
+
+        for p in products:
+            price_val = f"{p['price']:.2f}"
+            self.refund_results_tree.insert("", "end", iid=p["barcode"],
+                                            values=(p["name"], price_val, p["quantity"]))
+
+    def _hide_refund_results(self):
+        if self.refund_results_frame.winfo_manager():
+            self.refund_results_frame.pack_forget()
+
+    def _on_refund_result_double_click(self, event=None):
+        sel = self.refund_results_tree.selection()
+        if not sel:
+            return
+        barcode = sel[0]
+        self._refund_entry.delete(0, "end")
+        self._hide_refund_results()
+        self._process_refund(barcode=barcode)
+
+    def _process_refund(self, _=None, barcode: str | None = None):
+        if hasattr(self, "_refund_debounce") and self._refund_debounce:
+            self.after_cancel(self._refund_debounce)
+            self._refund_debounce = None
+
+        if barcode is None:
+            raw = self._refund_entry.get()
+            self._refund_entry.delete(0, "end")
+        else:
+            raw = barcode
+
+        self._hide_refund_results()
+
+        bc = _sanitise_barcode(raw)
+        if len(bc) < 2:
+            return
+
+        product = self.db.find_by_barcode(bc)
+        if not product:
+            self._refund_entry.flash_custom("#dc3545", 300)
+            play_beep(False)
+            self._rf_status.configure(text="Product Not Found", text_color=C_DANGER)
+            self._rf_name.configure(text=bc, text_color=C_TEXT_DIM)
+            self._rf_price.configure(text="")
+            self._rf_stock.configure(text="Barcode not in inventory.", text_color=C_TEXT_DIM)
+            return
+
+        # Update Live Card info
+        self._rf_status.configure(text="● PRODUCT SELECTED", text_color=C_ACCENT)
+        self._rf_name.configure(text=product["name"], text_color=C_TEXT)
+        self._rf_price.configure(text=format_price(product["price"]))
+        self._rf_stock.configure(text=f"Current Stock: {product['quantity']}", text_color=C_TEXT_DIM)
+
+        # Open Refund Quantity Modal
+        dlg = RefundQtyDialog(self, product)
+        self.wait_window(dlg)
+
+        if dlg.result:
+            qty_returned = dlg.result
+            ok, updated_p = self.db.process_refund(bc, qty_returned)
+            if ok and updated_p:
+                self._refund_entry.flash_custom("#28a745", 300)
+                play_beep(True)
+                self._rf_status.configure(text="✅ REFUND PROCESSED", text_color=C_SUCCESS)
+                self._rf_stock.configure(text=f"New Stock: {updated_p['quantity']}", text_color=C_SUCCESS)
+                self._toast(f"↩  REFUND: +{qty_returned} {updated_p['name']} (New Stock: {updated_p['quantity']})")
+                self._refund_load_log()
+                if hasattr(self, "_inv_tree"):
+                    self._inv_refresh()
+            else:
+                messagebox.showerror("Error", "Could not process refund.", parent=self)
+
+        self.after(50, self._refund_entry.focus_set)
 
 
     # ==================================================================
@@ -1989,6 +2364,8 @@ class InventoryApp(ctk.CTk):
             target = self._sale_entry
         elif self._active_view == "restock" and hasattr(self, "_restock_entry"):
             target = self._restock_entry
+        elif self._active_view == "refund"  and hasattr(self, "_refund_entry"):
+            target = self._refund_entry
 
         if target:
             try:
