@@ -82,8 +82,20 @@ class DatabaseManager:
                     category  TEXT NOT NULL DEFAULT 'General',
                     quantity  INTEGER NOT NULL DEFAULT 0,
                     price     REAL NOT NULL DEFAULT 0.0,
+                    original_price REAL NOT NULL DEFAULT 0.0,
                     expiry    TEXT DEFAULT 'N/A',
                     timestamp TEXT NOT NULL DEFAULT (strftime('%Y-%m-%d %H:%M:%S','now','localtime'))
+                );
+            """)
+
+            # ---- Transactions table ----
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS transactions (
+                    tracking_id   TEXT PRIMARY KEY,
+                    total_amount  REAL DEFAULT 0.0,
+                    total_items   INTEGER DEFAULT 0,
+                    total_profit  REAL DEFAULT 0.0,
+                    timestamp     TEXT NOT NULL DEFAULT (strftime('%Y-%m-%d %H:%M:%S','now','localtime'))
                 );
             """)
 
@@ -91,11 +103,42 @@ class DatabaseManager:
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS sales_log (
                     id            INTEGER PRIMARY KEY AUTOINCREMENT,
+                    tracking_id   TEXT DEFAULT 'LEGACY',
                     barcode       TEXT NOT NULL,
                     name          TEXT NOT NULL,
                     quantity_sold INTEGER NOT NULL,
+                    quantity_refunded INTEGER DEFAULT 0,
+                    unit_price    REAL DEFAULT 0.0,
+                    total_amount  REAL DEFAULT 0.0,
                     remaining_qty INTEGER NOT NULL,
                     timestamp     TEXT NOT NULL DEFAULT (strftime('%Y-%m-%d %H:%M:%S','now','localtime'))
+                );
+            """)
+
+            # Automatic Schema Migrations for existing databases
+            sales_log_cols = [row[1] for row in conn.execute("PRAGMA table_info(sales_log);").fetchall()]
+            if "unit_price" not in sales_log_cols:
+                conn.execute("ALTER TABLE sales_log ADD COLUMN unit_price REAL DEFAULT 0.0;")
+            if "total_amount" not in sales_log_cols:
+                conn.execute("ALTER TABLE sales_log ADD COLUMN total_amount REAL DEFAULT 0.0;")
+            if "tracking_id" not in sales_log_cols:
+                conn.execute("ALTER TABLE sales_log ADD COLUMN tracking_id TEXT DEFAULT 'LEGACY';")
+            if "quantity_refunded" not in sales_log_cols:
+                conn.execute("ALTER TABLE sales_log ADD COLUMN quantity_refunded INTEGER DEFAULT 0;")
+                
+            txn_cols = [row[1] for row in conn.execute("PRAGMA table_info(transactions);").fetchall()] if conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='transactions';").fetchone() else []
+            if txn_cols and "total_profit" not in txn_cols:
+                conn.execute("ALTER TABLE transactions ADD COLUMN total_profit REAL DEFAULT 0.0;")
+
+            # ---- Daily Sales Summary table (EOD Aggregates) ----
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS daily_sales_summary (
+                    id                 INTEGER PRIMARY KEY AUTOINCREMENT,
+                    sale_date          TEXT UNIQUE NOT NULL,
+                    total_transactions INTEGER NOT NULL DEFAULT 0,
+                    total_items_sold   INTEGER NOT NULL DEFAULT 0,
+                    total_revenue      REAL NOT NULL DEFAULT 0.0,
+                    compiled_at        TEXT NOT NULL DEFAULT (strftime('%Y-%m-%d %H:%M:%S','now','localtime'))
                 );
             """)
 
@@ -155,6 +198,10 @@ class DatabaseManager:
         if "expiry" not in existing_cols:
             conn.execute("ALTER TABLE products ADD COLUMN expiry TEXT DEFAULT 'N/A';")
             print("[DB] Migrated: added 'expiry' column")
+
+        if "original_price" not in existing_cols:
+            conn.execute("ALTER TABLE products ADD COLUMN original_price REAL DEFAULT 0.0;")
+            print("[DB] Migrated: added 'original_price' column")
 
         if "timestamp" not in existing_cols:
             # SQLite ALTER TABLE only accepts constant literals as DEFAULT —
@@ -247,7 +294,7 @@ class DatabaseManager:
     # ------------------------------------------------------------------
 
     def add_product(self, barcode: str, name: str, category: str,
-                    quantity: int, price: float, expiry: str = "N/A", user_role: str = "staff") -> bool:
+                    quantity: int, price: float, original_price: float = 0.0, expiry: str = "N/A", user_role: str = "staff") -> bool:
         """
         Inserts a new product.
         Returns True on success, False if barcode already exists.
@@ -256,33 +303,33 @@ class DatabaseManager:
             print("[DB] Access Denied: only admins can add products.")
             return False
         sql = """
-            INSERT INTO products (barcode, name, category, quantity, price, expiry, timestamp)
-            VALUES (?, ?, ?, ?, ?, ?, strftime('%Y-%m-%d %H:%M:%S','now','localtime'));
+            INSERT INTO products (barcode, name, category, quantity, price, original_price, expiry, timestamp)
+            VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%d %H:%M:%S','now','localtime'));
         """
         try:
             with self._connect() as conn:
                 conn.execute(sql, (barcode.strip(), name.strip(), category.strip(),
-                                   int(quantity), float(price), expiry.strip()))
+                                   int(quantity), float(price), float(original_price), expiry.strip()))
                 conn.commit()
             return True
         except sqlite3.IntegrityError:
             return False   # Duplicate barcode
 
     def update_product(self, barcode: str, name: str, category: str,
-                       quantity: int, price: float, expiry: str = "N/A", user_role: str = "staff") -> bool:
+                       quantity: int, price: float, original_price: float = 0.0, expiry: str = "N/A", user_role: str = "staff") -> bool:
         """Updates an existing product. Returns True if a row was changed."""
         if user_role != "admin":
             print("[DB] Access Denied: only admins can update products.")
             return False
         sql = """
             UPDATE products
-            SET name=?, category=?, quantity=?, price=?, expiry=?,
+            SET name=?, category=?, quantity=?, price=?, original_price=?, expiry=?,
                 timestamp=strftime('%Y-%m-%d %H:%M:%S','now','localtime')
             WHERE barcode=?;
         """
         with self._connect() as conn:
             cur = conn.execute(sql, (name.strip(), category.strip(),
-                                     int(quantity), float(price), expiry.strip(), barcode.strip()))
+                                     int(quantity), float(price), float(original_price), expiry.strip(), barcode.strip()))
             conn.commit()
         return cur.rowcount > 0
 
@@ -324,15 +371,12 @@ class DatabaseManager:
 
             new_qty = max(0, product["quantity"] + amount)
             with self._connect() as conn:
-                if new_qty == 0:
-                    conn.execute("DELETE FROM products WHERE barcode=?;", (barcode.strip(),))
-                else:
-                    conn.execute(
-                        "UPDATE products SET quantity=?, "
-                        "timestamp=strftime('%Y-%m-%d %H:%M:%S','now','localtime') "
-                        "WHERE barcode=?;",
-                        (new_qty, barcode.strip())
-                    )
+                conn.execute(
+                    "UPDATE products SET quantity=?, "
+                    "timestamp=strftime('%Y-%m-%d %H:%M:%S','now','localtime') "
+                    "WHERE barcode=?;",
+                    (new_qty, barcode.strip())
+                )
                 conn.commit()
 
             product["quantity"] = new_qty
@@ -349,19 +393,104 @@ class DatabaseManager:
         return cur.rowcount > 0
 
     # ------------------------------------------------------------------
-    # Logs — Write
+    # Transactions & Logs — Write
     # ------------------------------------------------------------------
 
-    def log_sale(self, barcode: str, name: str, quantity_sold: int, remaining_qty: int):
+    def create_transaction(self, tracking_id: str, total_amount: float, total_items: int, total_profit: float = 0.0):
+        with self._connect() as conn:
+            conn.execute(
+                "INSERT INTO transactions (tracking_id, total_amount, total_items, total_profit) VALUES (?, ?, ?, ?);",
+                (tracking_id, total_amount, total_items, total_profit)
+            )
+            conn.commit()
+
+    def get_recent_transactions(self, limit: int = 50) -> list[dict]:
+        sql = "SELECT tracking_id, total_amount, total_items, total_profit, timestamp FROM transactions ORDER BY timestamp DESC LIMIT ?;"
+        with self._connect() as conn:
+            return [dict(r) for r in conn.execute(sql, (limit,)).fetchall()]
+
+    def get_transactions_with_filters(self, tracking_id: str = "", date_range: str = "All Time", limit: int = 200) -> list[dict]:
+        sql = "SELECT tracking_id, total_amount, total_items, total_profit, timestamp FROM transactions WHERE 1=1"
+        params = []
+        
+        if tracking_id:
+            sql += " AND tracking_id LIKE ?"
+            params.append(f"%{tracking_id}%")
+            
+        if date_range != "All Time":
+            from datetime import datetime, timedelta
+            now = datetime.now()
+            if date_range == "Today":
+                start_date = now.strftime("%Y-%m-%d 00:00:00")
+            elif date_range == "This Week":
+                start_date = (now - timedelta(days=7)).strftime("%Y-%m-%d 00:00:00")
+            elif date_range == "This Month":
+                start_date = (now - timedelta(days=30)).strftime("%Y-%m-%d 00:00:00")
+            else:
+                start_date = "1970-01-01 00:00:00"
+            sql += " AND timestamp >= ?"
+            params.append(start_date)
+            
+        sql += " ORDER BY timestamp DESC LIMIT ?"
+        params.append(limit)
+        
+        with self._connect() as conn:
+            return [dict(r) for r in conn.execute(sql, tuple(params)).fetchall()]
+
+    def get_transaction_items(self, tracking_id: str) -> list[dict]:
+        sql = """
+            SELECT id, tracking_id, barcode, name, quantity_sold, quantity_refunded, unit_price, total_amount
+            FROM sales_log
+            WHERE tracking_id = ?;
         """
-        Records a sale event.
+        with self._connect() as conn:
+            return [dict(r) for r in conn.execute(sql, (tracking_id,)).fetchall()]
+
+    def process_refund_item(self, log_id: int, barcode: str, refund_qty: int) -> bool:
+        """Processes a refund for a specific sales log entry, increasing stock and updating refunded qty."""
+        with self._lock:
+            try:
+                with self._connect() as conn:
+                    # Get product name and current qty
+                    row = conn.execute("SELECT name, quantity FROM products WHERE barcode = ?;", (barcode,)).fetchone()
+                    if not row:
+                        return False
+                    name = row["name"]
+                    current_qty = row["quantity"]
+                    new_qty = current_qty + refund_qty
+                    
+                    # Increment stock
+                    conn.execute(
+                        "UPDATE products SET quantity = ?, timestamp = strftime('%Y-%m-%d %H:%M:%S','now','localtime') WHERE barcode = ?;",
+                        (new_qty, barcode)
+                    )
+                    # Increment refunded quantity in log
+                    conn.execute(
+                        "UPDATE sales_log SET quantity_refunded = quantity_refunded + ? WHERE id = ?;",
+                        (refund_qty, log_id)
+                    )
+                    # Add to restock_log so it shows in return history
+                    conn.execute(
+                        "INSERT INTO restock_log (barcode, name, quantity_added, remaining_qty) VALUES (?, ?, ?, ?);",
+                        (barcode, name, refund_qty, new_qty)
+                    )
+                    conn.commit()
+                return True
+            except Exception as e:
+                print(f"[DB] Refund error: {e}")
+                return False
+
+    def log_sale(self, tracking_id: str, barcode: str, name: str, quantity_sold: int, remaining_qty: int,
+                 unit_price: float = 0.0, total_amount: float = 0.0):
+        """
+        Records a sale event with pricing information.
         Automatically prunes the table to keep only the last LOG_LIMIT rows.
         """
         with self._connect() as conn:
             conn.execute(
-                "INSERT INTO sales_log (barcode, name, quantity_sold, remaining_qty) "
-                "VALUES (?, ?, ?, ?);",
-                (barcode, name, quantity_sold, remaining_qty)
+                "INSERT INTO sales_log (tracking_id, barcode, name, quantity_sold, unit_price, total_amount, remaining_qty) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?);",
+                (tracking_id, barcode, name, quantity_sold, unit_price, total_amount, remaining_qty)
             )
             # Keep only the most recent LOG_LIMIT records
             conn.execute(
@@ -370,6 +499,87 @@ class DatabaseManager:
                 (self.LOG_LIMIT,)
             )
             conn.commit()
+
+    def run_eod_wrapup(self, sale_date: str = None) -> tuple[bool, str, dict]:
+        """
+        End-of-Day (EOD) compilation function.
+        Aggregates individual sales transactions for a given date (default: today)
+        and saves a single daily summary record into daily_sales_summary.
+        """
+        if not sale_date:
+            sale_date = datetime.now().strftime("%Y-%m-%d")
+
+        with self._lock:
+            try:
+                with self._connect() as conn:
+                    # Aggregate transaction metrics for the specified date
+                    sql_aggregate = """
+                        SELECT 
+                            COUNT(*) as total_transactions,
+                            COALESCE(SUM(quantity_sold), 0) as total_items_sold,
+                            COALESCE(SUM(total_amount), 0.0) as total_revenue
+                        FROM sales_log
+                        WHERE strftime('%Y-%m-%d', timestamp) = ?;
+                    """
+                    row = conn.execute(sql_aggregate, (sale_date,)).fetchone()
+                    
+                    trans_count = row["total_transactions"]
+                    items_sold  = row["total_items_sold"]
+                    revenue     = row["total_revenue"]
+
+                    # Upsert (Insert or Update on conflict) into daily_sales_summary
+                    sql_upsert = """
+                        INSERT INTO daily_sales_summary (sale_date, total_transactions, total_items_sold, total_revenue)
+                        VALUES (?, ?, ?, ?)
+                        ON CONFLICT(sale_date) DO UPDATE SET
+                            total_transactions = excluded.total_transactions,
+                            total_items_sold  = excluded.total_items_sold,
+                            total_revenue     = excluded.total_revenue,
+                            compiled_at       = strftime('%Y-%m-%d %H:%M:%S','now','localtime');
+                    """
+                    conn.execute(sql_upsert, (sale_date, trans_count, items_sold, revenue))
+                    conn.commit()
+
+                summary = {
+                    "sale_date": sale_date,
+                    "total_transactions": trans_count,
+                    "total_items_sold": items_sold,
+                    "total_revenue": revenue
+                }
+                msg = f"EOD Wrap-Up compiled for {sale_date}: {trans_count} transactions, {items_sold} items sold, PKR {revenue:.2f} total revenue."
+                return True, msg, summary
+
+            except Exception as e:
+                return False, f"EOD compilation failed: {e}", {}
+
+    def get_monthly_sales_report(self, year_month: str = None) -> dict:
+        """
+        Queries the daily_sales_summary table for all days in a given month.
+        Format: YYYY-MM (e.g. '2026-07'). Defaults to current month.
+        """
+        if not year_month:
+            year_month = datetime.now().strftime("%Y-%m")
+
+        with self._connect() as conn:
+            sql = """
+                SELECT sale_date, total_transactions, total_items_sold, total_revenue
+                FROM daily_sales_summary
+                WHERE strftime('%Y-%m', sale_date) = ?
+                ORDER BY sale_date ASC;
+            """
+            rows = [dict(r) for r in conn.execute(sql, (year_month,)).fetchall()]
+
+        total_revenue = sum(r["total_revenue"] for r in rows)
+        total_items   = sum(r["total_items_sold"] for r in rows)
+        total_trans   = sum(r["total_transactions"] for r in rows)
+
+        return {
+            "year_month": year_month,
+            "total_revenue": total_revenue,
+            "total_items_sold": total_items,
+            "total_transactions": total_trans,
+            "daily_breakdown": rows
+        }
 
     def log_restock(self, barcode: str, name: str, quantity_added: int, remaining_qty: int):
         """
