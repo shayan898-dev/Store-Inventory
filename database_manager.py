@@ -95,6 +95,8 @@ class DatabaseManager:
                     total_amount  REAL DEFAULT 0.0,
                     total_items   INTEGER DEFAULT 0,
                     total_profit  REAL DEFAULT 0.0,
+                    discount_applied REAL DEFAULT 0.0,
+                    discount_type TEXT DEFAULT 'None',
                     timestamp     TEXT NOT NULL DEFAULT (strftime('%Y-%m-%d %H:%M:%S','now','localtime'))
                 );
             """)
@@ -129,6 +131,10 @@ class DatabaseManager:
             txn_cols = [row[1] for row in conn.execute("PRAGMA table_info(transactions);").fetchall()] if conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='transactions';").fetchone() else []
             if txn_cols and "total_profit" not in txn_cols:
                 conn.execute("ALTER TABLE transactions ADD COLUMN total_profit REAL DEFAULT 0.0;")
+            if txn_cols and "discount_applied" not in txn_cols:
+                conn.execute("ALTER TABLE transactions ADD COLUMN discount_applied REAL DEFAULT 0.0;")
+            if txn_cols and "discount_type" not in txn_cols:
+                conn.execute("ALTER TABLE transactions ADD COLUMN discount_type TEXT DEFAULT 'None';")
 
             # ---- Daily Sales Summary table (EOD Aggregates) ----
             conn.execute("""
@@ -396,21 +402,21 @@ class DatabaseManager:
     # Transactions & Logs — Write
     # ------------------------------------------------------------------
 
-    def create_transaction(self, tracking_id: str, total_amount: float, total_items: int, total_profit: float = 0.0):
+    def create_transaction(self, tracking_id: str, total_amount: float, total_items: int, total_profit: float = 0.0, discount_applied: float = 0.0, discount_type: str = "None"):
         with self._connect() as conn:
             conn.execute(
-                "INSERT INTO transactions (tracking_id, total_amount, total_items, total_profit) VALUES (?, ?, ?, ?);",
-                (tracking_id, total_amount, total_items, total_profit)
+                "INSERT INTO transactions (tracking_id, total_amount, total_items, total_profit, discount_applied, discount_type) VALUES (?, ?, ?, ?, ?, ?);",
+                (tracking_id, total_amount, total_items, total_profit, discount_applied, discount_type)
             )
             conn.commit()
 
     def get_recent_transactions(self, limit: int = 50) -> list[dict]:
-        sql = "SELECT tracking_id, total_amount, total_items, total_profit, timestamp FROM transactions ORDER BY timestamp DESC LIMIT ?;"
+        sql = "SELECT tracking_id, total_amount, total_items, total_profit, discount_applied, discount_type, timestamp FROM transactions ORDER BY timestamp DESC LIMIT ?;"
         with self._connect() as conn:
             return [dict(r) for r in conn.execute(sql, (limit,)).fetchall()]
 
     def get_transactions_with_filters(self, tracking_id: str = "", date_range: str = "All Time", limit: int = 200) -> list[dict]:
-        sql = "SELECT tracking_id, total_amount, total_items, total_profit, timestamp FROM transactions WHERE 1=1"
+        sql = "SELECT tracking_id, total_amount, total_items, total_profit, discount_applied, discount_type, timestamp FROM transactions WHERE 1=1"
         params = []
         
         if tracking_id:
@@ -445,6 +451,71 @@ class DatabaseManager:
         """
         with self._connect() as conn:
             return [dict(r) for r in conn.execute(sql, (tracking_id,)).fetchall()]
+
+    def _get_start_date(self, date_range: str) -> str:
+        from datetime import datetime, timedelta
+        now = datetime.now()
+        if date_range == "Today":
+            return now.strftime("%Y-%m-%d 00:00:00")
+        elif date_range == "Last 7 Days":
+            return (now - timedelta(days=7)).strftime("%Y-%m-%d 00:00:00")
+        elif date_range == "This Month":
+            return (now - timedelta(days=30)).strftime("%Y-%m-%d 00:00:00")
+        return "1970-01-01 00:00:00"
+
+    def get_analytics_summary(self, date_range: str) -> dict:
+        start_date = self._get_start_date(date_range)
+        sql = """
+            SELECT 
+                COALESCE(SUM((s.quantity_sold - s.quantity_refunded) * s.unit_price), 0.0) as gross_revenue,
+                COALESCE(SUM((s.quantity_sold - s.quantity_refunded) * (s.unit_price - p.original_price)), 0.0) as net_profit,
+                COALESCE(SUM(s.quantity_sold - s.quantity_refunded), 0) as total_items_sold
+            FROM sales_log s
+            JOIN products p ON s.barcode = p.barcode
+            WHERE s.timestamp >= ?
+        """
+        with self._connect() as conn:
+            row = conn.execute(sql, (start_date,)).fetchone()
+            return dict(row) if row else {"gross_revenue": 0.0, "net_profit": 0.0, "total_items_sold": 0}
+
+    def get_top_performing_products(self, date_range: str) -> list[dict]:
+        start_date = self._get_start_date(date_range)
+        sql = """
+            SELECT 
+                p.name, 
+                p.barcode,
+                SUM(s.quantity_sold - s.quantity_refunded) as total_units_sold,
+                SUM((s.quantity_sold - s.quantity_refunded) * s.unit_price) as total_revenue,
+                SUM((s.quantity_sold - s.quantity_refunded) * (s.unit_price - p.original_price)) as total_profit
+            FROM sales_log s
+            JOIN products p ON s.barcode = p.barcode
+            WHERE s.timestamp >= ?
+            GROUP BY p.barcode
+            HAVING total_units_sold > 0
+            ORDER BY total_profit DESC
+            LIMIT 50
+        """
+        with self._connect() as conn:
+            return [dict(r) for r in conn.execute(sql, (start_date,)).fetchall()]
+
+    def get_sold_out_analytics(self, date_range: str) -> list[dict]:
+        start_date = self._get_start_date(date_range)
+        sql = """
+            SELECT 
+                p.name, 
+                p.barcode,
+                SUM(s.quantity_sold - s.quantity_refunded) as total_units_sold,
+                SUM((s.quantity_sold - s.quantity_refunded) * s.unit_price) as total_revenue,
+                SUM((s.quantity_sold - s.quantity_refunded) * (s.unit_price - p.original_price)) as total_profit
+            FROM sales_log s
+            JOIN products p ON s.barcode = p.barcode
+            WHERE p.quantity = 0 AND s.timestamp >= ?
+            GROUP BY p.barcode
+            HAVING total_units_sold > 0
+            ORDER BY total_profit DESC
+        """
+        with self._connect() as conn:
+            return [dict(r) for r in conn.execute(sql, (start_date,)).fetchall()]
 
     def process_refund_item(self, log_id: int, barcode: str, refund_qty: int) -> bool:
         """Processes a refund for a specific sales log entry, increasing stock and updating refunded qty."""
@@ -516,9 +587,9 @@ class DatabaseManager:
                     sql_aggregate = """
                         SELECT 
                             COUNT(*) as total_transactions,
-                            COALESCE(SUM(quantity_sold), 0) as total_items_sold,
+                            COALESCE(SUM(total_items), 0) as total_items_sold,
                             COALESCE(SUM(total_amount), 0.0) as total_revenue
-                        FROM sales_log
+                        FROM transactions
                         WHERE strftime('%Y-%m-%d', timestamp) = ?;
                     """
                     row = conn.execute(sql_aggregate, (sale_date,)).fetchone()

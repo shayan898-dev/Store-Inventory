@@ -1573,18 +1573,54 @@ class InventoryApp(ctk.CTk):
         # Footer
         footer = ctk.CTkFrame(right, fg_color=C_CARD2, corner_radius=0)
         footer.pack(fill="x", side="bottom")
+
+        # Top section of footer for totals
+        totals_frame = ctk.CTkFrame(footer, fg_color="transparent")
+        totals_frame.pack(fill="x", padx=16, pady=(12, 0))
         
-        self._bill_total_lbl = ctk.CTkLabel(footer, text="Total Price: PKR 0.00",
+        self._bill_subtotal_lbl = ctk.CTkLabel(totals_frame, text="Subtotal: PKR 0.00",
+                                               font=(FONT, 13), text_color=C_TEXT_DIM)
+        self._bill_subtotal_lbl.pack(side="top", anchor="e")
+        
+        self._bill_discount_lbl = ctk.CTkLabel(totals_frame, text="Discount: - PKR 0.00",
+                                               font=(FONT, 13), text_color=C_DANGER)
+        self._bill_discount_lbl.pack(side="top", anchor="e")
+
+        # Bottom section of footer for buttons and discount input
+        controls_frame = ctk.CTkFrame(footer, fg_color="transparent")
+        controls_frame.pack(fill="x", padx=16, pady=(8, 16))
+
+        # Left side: Total Price
+        self._bill_total_lbl = ctk.CTkLabel(controls_frame, text="Total: PKR 0.00",
                                             font=(FONT, 18, "bold"), text_color=C_ACCENT)
-        self._bill_total_lbl.pack(side="left", padx=16, pady=16)
-        
-        ctk.CTkButton(footer, text="Confirm Bill", font=(FONT, 13, "bold"),
+        self._bill_total_lbl.pack(side="left")
+
+        # Right side: Buttons
+        ctk.CTkButton(controls_frame, text="Confirm Bill", font=(FONT, 13, "bold"),
                       fg_color=C_SUCCESS, hover_color="#2EA043", width=120, height=40,
-                      command=self._confirm_bill).pack(side="right", padx=(0, 16), pady=16)
+                      command=self._confirm_bill).pack(side="right", padx=(10, 0))
                       
-        ctk.CTkButton(footer, text="Clear Bill", font=(FONT, 13, "bold"),
+        ctk.CTkButton(controls_frame, text="Clear Bill", font=(FONT, 13, "bold"),
                       fg_color="#3B1A1A", hover_color=C_DANGER, width=100, height=40,
-                      command=self._clear_bill).pack(side="right", padx=16, pady=16)
+                      command=self._clear_bill).pack(side="right", padx=(10, 0))
+
+        # Right side (before buttons): Discount Input
+        self._discount_var = ctk.StringVar(value="")
+        self._discount_var.trace_add("write", lambda *args: self._refresh_bill_ui())
+        
+        self._discount_entry = ctk.CTkEntry(controls_frame, textvariable=self._discount_var,
+                                            width=80, height=34, font=(FONT, 12),
+                                            placeholder_text="0.00",
+                                            fg_color=C_BG, border_color=C_BORDER)
+        self._discount_entry.pack(side="right", padx=(10, 0))
+
+        self._discount_type = ctk.StringVar(value="Flat")
+        self._discount_type.trace_add("write", lambda *args: self._refresh_bill_ui())
+        
+        ctk.CTkComboBox(controls_frame, variable=self._discount_type,
+                        values=["Flat", "%"], width=70, height=34,
+                        font=(FONT, 12), fg_color=C_CARD, border_color=C_BORDER,
+                        state="readonly").pack(side="right")
 
         return frame
 
@@ -1822,17 +1858,29 @@ class InventoryApp(ctk.CTk):
 
     # ── Transaction log ───────────────────────────────────────────────
 
+    def _get_discount_val(self) -> float:
+        if not hasattr(self, "_discount_var"):
+            return 0.0
+        val_str = self._discount_var.get().strip()
+        if not val_str:
+            return 0.0
+        try:
+            val = float(val_str)
+            return val if val > 0 else 0.0
+        except ValueError:
+            return 0.0
+
     def _refresh_bill_ui(self):
         for w in self._sale_log_rows:
             w.destroy()
         self._sale_log_rows.clear()
         
-        total_price = 0.0
+        subtotal_price = 0.0
         total_items = 0
         
         for bc, item in self._current_bill.items():
             subtotal = item["qty"] * item["price"]
-            total_price += subtotal
+            subtotal_price += subtotal
             total_items += item["qty"]
             self._sale_log_insert_row(
                 qty=item["qty"],
@@ -1841,7 +1889,25 @@ class InventoryApp(ctk.CTk):
                 subtotal=format_price(subtotal)
             )
             
-        self._bill_total_lbl.configure(text=f"Total Price: {format_price(total_price)}")
+        discount_val = self._get_discount_val()
+        discount_amt = 0.0
+        discount_text = "- PKR 0.00"
+        
+        if discount_val > 0:
+            if self._discount_type.get() == "Flat":
+                discount_amt = min(discount_val, subtotal_price)
+                discount_text = f"- {format_price(discount_amt)}"
+            else: # Percentage
+                pct = min(discount_val, 100.0)
+                discount_amt = subtotal_price * (pct / 100.0)
+                discount_text = f"- {pct}% ({format_price(discount_amt)})"
+                
+        final_total = max(0.0, subtotal_price - discount_amt)
+        
+        self._bill_subtotal_lbl.configure(text=f"Subtotal: {format_price(subtotal_price)}")
+        self._bill_discount_lbl.configure(text=f"Discount: {discount_text}")
+        self._bill_total_lbl.configure(text=f"Total: {format_price(final_total)}")
+        
         self._sale_count_lbl.configure(text=f"{total_items} items")
         self._sale_session_count = total_items
 
@@ -1870,6 +1936,8 @@ class InventoryApp(ctk.CTk):
 
     def _clear_bill(self):
         self._current_bill.clear()
+        if hasattr(self, "_discount_var"):
+            self._discount_var.set("")
         self._refresh_bill_ui()
         self._pc_update_card(
             status="Scan a product to begin",
@@ -1889,14 +1957,14 @@ class InventoryApp(ctk.CTk):
         import uuid
         tracking_id = "TRK-" + datetime.now().strftime("%Y%m%d%H%M%S") + "-" + str(uuid.uuid4().hex[:4]).upper()
         
-        total_amount = 0.0
+        subtotal_amount = 0.0
         total_items = 0
         total_profit = 0.0
         
         for bc, item in self._current_bill.items():
             qty = item["qty"]
             sell_price = item["price"]
-            total_amount += qty * sell_price
+            subtotal_amount += qty * sell_price
             total_items += qty
             
             # Fetch original price for profit calc
@@ -1904,8 +1972,25 @@ class InventoryApp(ctk.CTk):
             if product:
                 orig_price = product.get("original_price", 0.0)
                 total_profit += (sell_price - orig_price) * qty
+
+        # Apply Discount
+        discount_val = self._get_discount_val()
+        discount_amt = 0.0
+        discount_type_str = "None"
         
-        self.db.create_transaction(tracking_id, total_amount, total_items, total_profit)
+        if discount_val > 0:
+            if self._discount_type.get() == "Flat":
+                discount_amt = min(discount_val, subtotal_amount)
+                discount_type_str = f"Flat (PKR {discount_val})"
+            else:
+                pct = min(discount_val, 100.0)
+                discount_amt = subtotal_amount * (pct / 100.0)
+                discount_type_str = f"Percentage ({pct}%)"
+                
+        final_total = max(0.0, subtotal_amount - discount_amt)
+        final_profit = total_profit - discount_amt
+        
+        self.db.create_transaction(tracking_id, final_total, total_items, final_profit, discount_amt, discount_type_str)
             
         for bc, item in self._current_bill.items():
             status, product = self.db.update_stock(bc, -item["qty"])
@@ -2337,151 +2422,90 @@ class InventoryApp(ctk.CTk):
             command=self._on_run_eod_click
         ).pack(side="right")
 
-        # Stat cards grid (Inventory Overview)
+        # --- NEW DATE FILTER ---
+        ctk.CTkLabel(hdr, text="Date Range:", font=(FONT, 12)).pack(side="right", padx=(20, 10))
+        self._report_date_var = ctk.StringVar(value="All Time")
+        date_combo = ctk.CTkComboBox(hdr, variable=self._report_date_var,
+                                     values=["Today", "Last 7 Days", "This Month", "All Time"],
+                                     width=140, height=34, font=(FONT, 12),
+                                     fg_color=C_CARD2, border_color=C_BORDER,
+                                     command=lambda _: self._reports_refresh())
+        date_combo.pack(side="right")
+
+        # --- SUMMARY CARDS ---
         grid = ctk.CTkFrame(frame, fg_color="transparent")
         grid.pack(fill="x", padx=28, pady=(0, 10))
-        for i in range(4):
+        for i in range(3):
             grid.columnconfigure(i, weight=1, uniform="stat")
 
-        self._stat_products = StatCard(grid, "Total Products",   "…", "📦", C_ACCENT)
-        self._stat_items    = StatCard(grid, "Total Items",      "…", "🔢", C_SUCCESS)
-        self._stat_low      = StatCard(grid, "Low Stock Alerts", "…", "⚠", C_WARNING)
-        self._stat_value    = StatCard(grid, "Inventory Value",  "…", "💰", "#A371F7")
+        self._stat_gross = StatCard(grid, "Gross Revenue",   "…", "💵", C_SUCCESS)
+        self._stat_net   = StatCard(grid, "Net Profit",      "…", "📈", C_ACCENT)
+        self._stat_sold  = StatCard(grid, "Total Items Sold", "…", "📦", "#A371F7")
 
-        self._stat_products.grid(row=0, column=0, sticky="nsew", padx=(0, 4))
-        self._stat_items.grid(   row=0, column=1, sticky="nsew", padx=2)
-        self._stat_low.grid(     row=0, column=2, sticky="nsew", padx=2)
-        self._stat_value.grid(   row=0, column=3, sticky="nsew", padx=(4, 0))
+        self._stat_gross.grid(row=0, column=0, sticky="nsew", padx=(0, 4))
+        self._stat_net.grid(  row=0, column=1, sticky="nsew", padx=2)
+        self._stat_sold.grid( row=0, column=2, sticky="nsew", padx=(4, 0))
 
-        # ── Monthly Sales Performance Section ──────────────────────────
-        m_hdr = ctk.CTkFrame(frame, fg_color="transparent")
-        m_hdr.pack(fill="x", padx=28, pady=(14, 6))
-        ctk.CTkLabel(m_hdr, text="📈  Monthly Sales Summary", font=(FONT, 16, "bold"),
-                     text_color=C_TEXT).pack(side="left")
+        # --- TOP PERFORMING PRODUCTS ---
+        ctk.CTkLabel(frame, text="⭐  Top Performing Products", font=(FONT, 16, "bold"),
+                     text_color=C_TEXT).pack(anchor="w", padx=28, pady=(14, 4))
 
-        # Month Selector Dropdown (Past 12 months)
-        now = datetime.now()
-        months_list = []
-        for i in range(12):
-            m_date = now - timedelta(days=i*30)
-            months_list.append(m_date.strftime("%Y-%m"))
-        months_list = sorted(list(set(months_list)), reverse=True)
-
-        self._report_month_var = ctk.StringVar(value=months_list[0] if months_list else now.strftime("%Y-%m"))
-        m_combo = ctk.CTkComboBox(
-            m_hdr, values=months_list, variable=self._report_month_var,
-            width=130, height=34, font=(FONT, 12),
-            fg_color=C_CARD2, border_color=C_BORDER,
-            command=lambda _: self._reports_refresh()
-        )
-        m_combo.pack(side="right")
-        ctk.CTkLabel(m_hdr, text="Select Month: ", font=(FONT, 12), text_color=C_TEXT_DIM).pack(side="right", padx=(0, 4))
-
-        # Monthly Stats Cards Row
-        m_grid = ctk.CTkFrame(frame, fg_color="transparent")
-        m_grid.pack(fill="x", padx=28, pady=(0, 10))
-        for i in range(3):
-            m_grid.columnconfigure(i, weight=1, uniform="mstat")
-
-        self._stat_month_rev   = StatCard(m_grid, "Monthly Revenue",      "…", "💵", C_SUCCESS)
-        self._stat_month_items = StatCard(m_grid, "Monthly Items Sold",   "…", "🛒", C_ACCENT)
-        self._stat_month_trans = StatCard(m_grid, "Monthly Transactions", "…", "🧾", "#A371F7")
-
-        self._stat_month_rev.grid(  row=0, column=0, sticky="nsew", padx=(0, 4))
-        self._stat_month_items.grid(row=0, column=1, sticky="nsew", padx=2)
-        self._stat_month_trans.grid(row=0, column=2, sticky="nsew", padx=(4, 0))
-
-        # Daily Sales Breakdown Treeview
-        tbl_frame = ctk.CTkFrame(frame, fg_color=C_CARD, corner_radius=12)
-        tbl_frame.pack(fill="x", padx=28, pady=(0, 10))
-
-        vsb_m = ttk.Scrollbar(tbl_frame)
-        vsb_m.pack(side="right", fill="y")
-
-        self._month_tree = ttk.Treeview(
-            tbl_frame, columns=("date", "trans", "items", "revenue"), show="headings",
-            style="T.Treeview", yscrollcommand=vsb_m.set, height=5
-        )
-        vsb_m.configure(command=self._month_tree.yview)
-
-        self._month_tree.heading("date",    text="Sale Date (YYYY-MM-DD)", anchor="center")
-        self._month_tree.heading("trans",   text="Transactions",           anchor="center")
-        self._month_tree.heading("items",   text="Items Sold",             anchor="center")
-        self._month_tree.heading("revenue", text="Daily Revenue",          anchor="center")
-
-        self._month_tree.column("date",    width=200, anchor="center")
-        self._month_tree.column("trans",   width=140, anchor="center")
-        self._month_tree.column("items",   width=140, anchor="center")
-        self._month_tree.column("revenue", width=200, anchor="center")
-        self._month_tree.pack(fill="both", expand=True, padx=2, pady=2)
-
-        # Low stock list section
-        ctk.CTkLabel(frame, text="⚠  Low Stock Products", font=(FONT, 14, "bold"),
-                     text_color=C_WARNING).pack(anchor="w", padx=28, pady=(4, 4))
-
-        self._low_scroll = ctk.CTkScrollableFrame(frame, fg_color=C_CARD, corner_radius=12, height=70)
-        self._low_scroll.pack(fill="x", padx=28, pady=(0, 10))
-        self._low_rows: list = []
-
-        # Recent Transactions Section
-        ctk.CTkLabel(frame, text="🧾  Recent Transactions (Hover for details)", font=(FONT, 14, "bold"),
-                     text_color=C_ACCENT).pack(anchor="w", padx=28, pady=(4, 4))
-
-        txn_frame = ctk.CTkFrame(frame, fg_color=C_CARD, corner_radius=12)
-        txn_frame.pack(fill="both", expand=True, padx=28, pady=(0, 20))
-
-        vsb_txn = ttk.Scrollbar(txn_frame)
-        vsb_txn.pack(side="right", fill="y")
-
-        self._txn_tree = ttk.Treeview(
-            txn_frame, columns=("id", "amount", "items", "profit", "date"), show="headings",
-            style="T.Treeview", yscrollcommand=vsb_txn.set, height=5
-        )
-        vsb_txn.configure(command=self._txn_tree.yview)
-
-        self._txn_tree.heading("id",     text="Tracking ID",   anchor="center")
-        self._txn_tree.heading("amount", text="Total Amount",  anchor="center")
-        self._txn_tree.heading("items",  text="Total Items",   anchor="center")
-        self._txn_tree.heading("profit", text="Total Profit",  anchor="center")
-        self._txn_tree.heading("date",   text="Date & Time",   anchor="center")
-
-        self._txn_tree.column("id",     width=200, anchor="center")
-        self._txn_tree.column("amount", width=120, anchor="center")
-        self._txn_tree.column("items",  width=100, anchor="center")
-        self._txn_tree.column("profit", width=120, anchor="center")
-        self._txn_tree.column("date",   width=160, anchor="center")
-        self._txn_tree.pack(fill="both", expand=True, padx=2, pady=2)
+        top_frame = ctk.CTkFrame(frame, fg_color=C_CARD, corner_radius=12)
+        top_frame.pack(fill="x", padx=28, pady=(0, 10))
         
-        self._txn_tooltip = HoverTooltip(self._txn_tree)
-        self._txn_tree.bind("<Motion>", self._on_txn_hover)
-        self._txn_tree.bind("<Leave>", self._on_txn_leave)
+        vsb_top = ttk.Scrollbar(top_frame)
+        vsb_top.pack(side="right", fill="y")
         
-        self._cached_txn_items = {} # Cache for tooltip
+        self._top_tree = ttk.Treeview(
+            top_frame, columns=("name", "barcode", "sold", "revenue", "profit"), show="headings",
+            style="T.Treeview", yscrollcommand=vsb_top.set, height=5
+        )
+        vsb_top.configure(command=self._top_tree.yview)
+        
+        self._top_tree.heading("name",    text="Product Name", anchor="w")
+        self._top_tree.heading("barcode", text="Barcode",      anchor="center")
+        self._top_tree.heading("sold",    text="Units Sold",   anchor="center")
+        self._top_tree.heading("revenue", text="Revenue",      anchor="center")
+        self._top_tree.heading("profit",  text="Profit",       anchor="center")
+        
+        self._top_tree.column("name",    width=250, anchor="w")
+        self._top_tree.column("barcode", width=120, anchor="center")
+        self._top_tree.column("sold",    width=100, anchor="center")
+        self._top_tree.column("revenue", width=120, anchor="center")
+        self._top_tree.column("profit",  width=120, anchor="center")
+        self._top_tree.pack(fill="both", expand=True, padx=2, pady=2)
+
+        # --- OUT OF STOCK ANALYTICS ---
+        ctk.CTkLabel(frame, text="⚠  Out of Stock Analytics (Lifetime Profit)", font=(FONT, 16, "bold"),
+                     text_color=C_WARNING).pack(anchor="w", padx=28, pady=(14, 4))
+
+        oos_frame = ctk.CTkFrame(frame, fg_color=C_CARD, corner_radius=12)
+        oos_frame.pack(fill="both", expand=True, padx=28, pady=(0, 20))
+        
+        vsb_oos = ttk.Scrollbar(oos_frame)
+        vsb_oos.pack(side="right", fill="y")
+        
+        self._oos_analytics_tree = ttk.Treeview(
+            oos_frame, columns=("name", "barcode", "sold", "revenue", "profit"), show="headings",
+            style="T.Treeview", yscrollcommand=vsb_oos.set, height=5
+        )
+        vsb_oos.configure(command=self._oos_analytics_tree.yview)
+        
+        self._oos_analytics_tree.heading("name",    text="Product Name", anchor="w")
+        self._oos_analytics_tree.heading("barcode", text="Barcode",      anchor="center")
+        self._oos_analytics_tree.heading("sold",    text="Units Sold",   anchor="center")
+        self._oos_analytics_tree.heading("revenue", text="Revenue",      anchor="center")
+        self._oos_analytics_tree.heading("profit",  text="Profit",       anchor="center")
+        
+        self._oos_analytics_tree.column("name",    width=250, anchor="w")
+        self._oos_analytics_tree.column("barcode", width=120, anchor="center")
+        self._oos_analytics_tree.column("sold",    width=100, anchor="center")
+        self._oos_analytics_tree.column("revenue", width=120, anchor="center")
+        self._oos_analytics_tree.column("profit",  width=120, anchor="center")
+        self._oos_analytics_tree.pack(fill="both", expand=True, padx=2, pady=2)
 
         self._reports_refresh()
         return frame
-        
-    def _on_txn_hover(self, event):
-        item_id = self._txn_tree.identify_row(event.y)
-        if not item_id:
-            self._txn_tooltip.hide()
-            return
-            
-        tracking_id = self._txn_tree.item(item_id, "values")[0]
-        
-        if tracking_id not in self._cached_txn_items:
-            items = self.db.get_transaction_items(tracking_id)
-            if not items:
-                self._cached_txn_items[tracking_id] = "No items recorded."
-            else:
-                lines = [f"• {i['name']} (x{i['quantity_sold']}) = {format_price(i['total_amount'])}" for i in items]
-                self._cached_txn_items[tracking_id] = "\n".join(lines)
-                
-        text = self._cached_txn_items[tracking_id]
-        self._txn_tooltip.show(text, event.x_root, event.y_root)
-
-    def _on_txn_leave(self, event):
-        self._txn_tooltip.hide()
 
     def _on_run_eod_click(self):
         """Triggers the End-of-Day math compilation for today's sales."""
@@ -2498,69 +2522,40 @@ class InventoryApp(ctk.CTk):
                 messagebox.showerror("EOD Error", msg, parent=self)
 
     def _reports_refresh(self):
-        if not hasattr(self, "_stat_products"):
+        if not hasattr(self, "_stat_gross"):
             return
 
-        # 1. Inventory stats
-        st = self.db.get_summary_stats()
-        self._stat_products.update(st["total_products"])
-        self._stat_items.update(f"{st['total_items']:,}")
-        self._stat_low.update(st["low_stock_count"])
-        self._stat_value.update(format_price(st["total_value"]))
+        date_range = self._report_date_var.get() if hasattr(self, "_report_date_var") else "All Time"
 
-        # 2. Monthly Sales Report stats & treeview
-        selected_month = self._report_month_var.get() if hasattr(self, "_report_month_var") else datetime.now().strftime("%Y-%m")
-        rep = self.db.get_monthly_sales_report(selected_month)
+        # 1. Summary Stats
+        summary = self.db.get_analytics_summary(date_range)
+        self._stat_gross.update(format_price(summary["gross_revenue"]))
+        self._stat_net.update(format_price(summary["net_profit"]))
+        self._stat_sold.update(f"{summary['total_items_sold']:,}")
 
-        if hasattr(self, "_stat_month_rev"):
-            self._stat_month_rev.update(format_price(rep["total_revenue"]))
-            self._stat_month_items.update(f"{rep['total_items_sold']:,}")
-            self._stat_month_trans.update(f"{rep['total_transactions']:,}")
+        # 2. Top Performing Products
+        for row in self._top_tree.get_children():
+            self._top_tree.delete(row)
+        top_products = self.db.get_top_performing_products(date_range)
+        for p in top_products:
+            self._top_tree.insert("", "end",
+                                  values=(p["name"],
+                                          p["barcode"],
+                                          p["total_units_sold"],
+                                          format_price(p["total_revenue"]),
+                                          format_price(p["total_profit"])))
 
-        if hasattr(self, "_month_tree"):
-            for row in self._month_tree.get_children():
-                self._month_tree.delete(row)
-            for r in rep["daily_breakdown"]:
-                self._month_tree.insert("", "end",
-                                        values=(r["sale_date"],
-                                                r["total_transactions"],
-                                                r["total_items_sold"],
-                                                format_price(r["total_revenue"])))
-
-        # 3. Low stock alerts
-        for w in self._low_rows:
-            w.destroy()
-        self._low_rows.clear()
-
-        low = self.db.get_low_stock_products(threshold=5)
-        if not low:
-            lbl = ctk.CTkLabel(self._low_scroll, text="🎉  All products are well stocked!",
-                               font=(FONT, 13), text_color=C_TEXT_DIM)
-            lbl.pack(pady=20)
-            self._low_rows.append(lbl)
-        else:
-            for p in low:
-                r = ctk.CTkFrame(self._low_scroll, fg_color=C_CARD2, corner_radius=8)
-                r.pack(fill="x", padx=6, pady=3)
-                ctk.CTkLabel(r, text=f"⚠  {p['name']}", font=(FONT, 13, "bold"),
-                             text_color=C_WARNING).pack(side="left", padx=12, pady=8)
-                ctk.CTkLabel(r, text=f"Barcode: {p['barcode']}", font=(FONT, 11),
-                             text_color=C_TEXT_DIM).pack(side="left", padx=12)
-                self._low_rows.append(r)
-
-        # 4. Recent Transactions
-        if hasattr(self, "_txn_tree"):
-            for row in self._txn_tree.get_children():
-                self._txn_tree.delete(row)
-                
-            recent_txns = self.db.get_recent_transactions(limit=50)
-            for txn in recent_txns:
-                self._txn_tree.insert("", "end",
-                                      values=(txn["tracking_id"],
-                                              format_price(txn["total_amount"]),
-                                              txn["total_items"],
-                                              format_price(txn["total_profit"]),
-                                              txn["timestamp"]))
+        # 3. Out of Stock Analytics
+        for row in self._oos_analytics_tree.get_children():
+            self._oos_analytics_tree.delete(row)
+        oos_products = self.db.get_sold_out_analytics(date_range)
+        for p in oos_products:
+            self._oos_analytics_tree.insert("", "end",
+                                            values=(p["name"],
+                                                    p["barcode"],
+                                                    p["total_units_sold"],
+                                                    format_price(p["total_revenue"]),
+                                                    format_price(p["total_profit"])))
 
     # ==================================================================
     #  Ghost Focus Loop  (500ms check_focus pattern)
@@ -2599,8 +2594,17 @@ class InventoryApp(ctk.CTk):
                 )
                 if not dialog_open:
                     # Step 2: Does the entry already have focus?
-                    if self.focus_get() is not target:
-                        # Step 3: Force focus
+                    current_focus = self.focus_get()
+                    if current_focus:
+                        focus_path = str(current_focus)
+                        allowed = [str(target)]
+                        if self._active_view == "sales" and hasattr(self, "_discount_entry"):
+                            allowed.append(str(self._discount_entry))
+                            
+                        # If current focus is not inside any of the allowed CustomTkinter widgets
+                        if not any(focus_path.startswith(a) for a in allowed):
+                            target.focus_set()
+                    else:
                         target.focus_set()
             except Exception:
                 pass   # Silently ignore transient Tk state errors
