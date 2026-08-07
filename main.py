@@ -2031,6 +2031,7 @@ class InventoryApp(ctk.CTk):
         
         # --- Generate Receipt ---
         print_data = {
+            "test_mode": self.db.get_setting("test_mode", "0") == "1",
             "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "customer_type": "Walk in Customer",
             "transaction_id": tracking_id,
@@ -2039,10 +2040,7 @@ class InventoryApp(ctk.CTk):
             "total": final_total,
             "paid_by": paid_by,
             "received_amount": received_amount,
-            "change_amount": change_amount,
-            "paid_by": "Cash",
-            "received_amount": final_total,
-            "change_amount": 0.0
+            "change_amount": change_amount
         }
         for bc, item in self._current_bill.items():
             price = item["price"]
@@ -2060,10 +2058,6 @@ class InventoryApp(ctk.CTk):
         from printer_module import print_transaction_receipt
         threading.Thread(target=lambda: asyncio.run(print_transaction_receipt(print_data)), daemon=True).start()
         # ------------------------
-<<<<<<< HEAD
-=======
-
->>>>>>> printing
         self._clear_bill()
         
         if "inventory" in self._views:
@@ -3024,6 +3018,14 @@ class InventoryApp(ctk.CTk):
             self.setting_vars["auto_print"] = var_ap
             switch_ap = ctk.CTkSwitch(row_ap, text="", variable=var_ap, onvalue="1", offvalue="0")
             switch_ap.pack(side="left", padx=10)
+            
+            row_tm = ctk.CTkFrame(t2, fg_color="transparent")
+            row_tm.pack(fill="x", pady=10, padx=20)
+            ctk.CTkLabel(row_tm, text="Test Print Mode:", width=200, anchor="w", font=(FONT, 13)).pack(side="left")
+            var_tm = ctk.StringVar(value=self.db.get_setting("test_mode", "0"))
+            self.setting_vars["test_mode"] = var_tm
+            switch_tm = ctk.CTkSwitch(row_tm, text="", variable=var_tm, onvalue="1", offvalue="0")
+            switch_tm.pack(side="left", padx=10)
             
         # ==================== Sales & Transactions ====================
         if t3:

@@ -32,8 +32,9 @@ PRODUCT_ID = 0x0202
 
 def _do_print_receipt(data: dict) -> bool:
     try:
-        if TEST_MODE:
-            printer = Network("localhost", port=9100, profile="TM-T88III")
+        is_test_mode = data.get("test_mode", TEST_MODE)
+        if is_test_mode:
+            printer = Network("127.0.0.1", port=9100, profile="TM-T88III")
         else:
             win_printer_name = _find_windows_printer()
             if win_printer_name:

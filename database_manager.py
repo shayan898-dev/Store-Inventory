@@ -376,7 +376,16 @@ class DatabaseManager:
             staff_hash = bcrypt.hashpw(b'staff', bcrypt.gensalt()).decode('utf-8')
             conn.execute("INSERT INTO users (username, password_hash, role_id) VALUES ('admin', ?, (SELECT id FROM roles WHERE name='admin'));", (admin_hash,))
             conn.execute("INSERT INTO users (username, password_hash, role_id) VALUES ('staff', ?, (SELECT id FROM roles WHERE name='staff'));", (staff_hash,))
-            print("[DB] Seeded default users.")
+            
+            # Seed PBAC permissions for default users
+            all_perms = ["pos_checkout", "manage_inventory", "apply_discounts", "process_refunds", "view_history", "config_hardware", "system_admin"]
+            for p in all_perms:
+                conn.execute("INSERT INTO user_permissions (username, permission_name) VALUES ('admin', ?)", (p,))
+            staff_perms = ["pos_checkout", "manage_inventory"]
+            for p in staff_perms:
+                conn.execute("INSERT INTO user_permissions (username, permission_name) VALUES ('staff', ?)", (p,))
+                
+            print("[DB] Seeded default users and their permissions.")
                 
         conn.commit()
 
