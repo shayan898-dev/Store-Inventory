@@ -19,7 +19,7 @@ import time
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
 import customtkinter as ctk
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from database_manager import DatabaseManager
 
@@ -204,7 +204,6 @@ class ProductDialog(ctk.CTkToplevel):
         self.grab_set()
         self.focus_set()
 
-        cats = categories or CATEGORIES
 
         # Register validations
         vcmd_int = self.register(self._validate_int)
