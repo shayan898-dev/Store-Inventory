@@ -24,5 +24,12 @@ numpy>=1.24.0           # Required by opencv-python
 # Packaging (dev only — not needed on end-user machines)
 pyinstaller>=6.0.0
 
+
 # Security & Password Hashing
 bcrypt>=4.0.0
+
+# Printer (ESC/POS)
+python-escpos>=3.1
+pyusb>=1.2.1
+arabic-reshaper>=3.0.0
+python-bidi>=0.4.2

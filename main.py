@@ -19,7 +19,7 @@ import time
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
 import customtkinter as ctk
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from database_manager import DatabaseManager
 from security import SecurityManager, ManagerOverrideDialog
@@ -205,7 +205,6 @@ class ProductDialog(ctk.CTkToplevel):
         self.grab_set()
         self.focus_set()
 
-        cats = categories or CATEGORIES
 
         # Register validations
         vcmd_int = self.register(self._validate_int)
@@ -2040,7 +2039,10 @@ class InventoryApp(ctk.CTk):
             "total": final_total,
             "paid_by": paid_by,
             "received_amount": received_amount,
-            "change_amount": change_amount
+            "change_amount": change_amount,
+            "paid_by": "Cash",
+            "received_amount": final_total,
+            "change_amount": 0.0
         }
         for bc, item in self._current_bill.items():
             price = item["price"]
@@ -2058,6 +2060,10 @@ class InventoryApp(ctk.CTk):
         from printer_module import print_transaction_receipt
         threading.Thread(target=lambda: asyncio.run(print_transaction_receipt(print_data)), daemon=True).start()
         # ------------------------
+<<<<<<< HEAD
+=======
+
+>>>>>>> printing
         self._clear_bill()
         
         if "inventory" in self._views:
