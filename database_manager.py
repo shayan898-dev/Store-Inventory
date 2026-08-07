@@ -958,6 +958,7 @@ class DatabaseManager:
         sql = '''
             SELECT username
             FROM users
+            WHERE username != 'user'
             ORDER BY username ASC;
         '''
         with self._connect() as conn:

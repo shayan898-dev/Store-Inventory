@@ -965,7 +965,7 @@ class InventoryApp(ctk.CTk):
             nav_items.append(("transactions", "📋", "Transactions"))
             nav_items.append(("reports", "📈", "Reports"))
         if self.security.has_permission(self.username, "system_admin"):
-            nav_items.append(("members", "👥", "Members"))
+            nav_items.append(("staff", "👥", "Staff"))
         nav_items.append(("settings", "⚙", "Settings"))
 
         for name, icon, label in nav_items:
@@ -2827,7 +2827,7 @@ class InventoryApp(ctk.CTk):
         _btn(btns, "＋  Add",       C_ACCENT,   C_ACCENT_HVR, self._staff_add)
         _btn(btns, "✏  Edit",      C_CARD2,    C_BORDER,     self._staff_edit)
         _btn(btns, "🗑  Delete",    "#3B1A1A",  C_DANGER,     self._staff_delete)
-        _btn(btns, "🔑  User Logins", C_CARD2,  C_BORDER,     self._manage_users, pad=(0, 0))
+        _btn(btns, "🔑  User Logins", C_CARD2,  C_BORDER,     lambda: self.show_view("settings"), pad=(0, 0))
 
         # Search bar
         sf = ctk.CTkFrame(frame, fg_color="transparent")
