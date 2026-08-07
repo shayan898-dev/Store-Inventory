@@ -1,0 +1,19 @@
+# Ignore local SQLite database files and temporary locks
+*.db
+*.db-shm
+*.db-wal
+
+# Ignore Python cache and compiled files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Ignore virtual environments
+venv/
+env/
+
+# Ignore Mac/Windows system files
+.DS_Store
+Thumbs.db
+4. How to us
