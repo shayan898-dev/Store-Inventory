@@ -1953,7 +1953,113 @@ class InventoryApp(ctk.CTk):
         if not self._current_bill:
             self._toast("⚠  Bill is empty!", ms=2000)
             return
+
+        # Calculate final total to show on the checkout modal
+        subtotal_amount = 0.0
+        for bc, item in self._current_bill.items():
+            subtotal_amount += item["qty"] * item["price"]
+
+        discount_val = self._get_discount_val()
+        discount_amt = 0.0
+        if discount_val > 0:
+            if self._discount_type.get() == "Flat":
+                discount_amt = min(discount_val, subtotal_amount)
+            else:
+                pct = min(discount_val, 100.0)
+                discount_amt = subtotal_amount * (pct / 100.0)
+                
+        final_total = max(0.0, subtotal_amount - discount_amt)
+        self._show_checkout_modal(final_total)
+
+    def _show_checkout_modal(self, final_total):
+        modal = ctk.CTkToplevel(self)
+        modal.title("Checkout")
+        modal.geometry("400x350")
+        modal.resizable(False, False)
+        modal.transient(self)
+        modal.grab_set()
+
+        # Center the modal
+        modal.update_idletasks()
+        x = self.winfo_x() + (self.winfo_width() // 2) - (400 // 2)
+        y = self.winfo_y() + (self.winfo_height() // 2) - (350 // 2)
+        modal.geometry(f"+{x}+{y}")
+
+        ctk.CTkLabel(modal, text="Checkout", font=(FONT, 20, "bold"), text_color=C_TEXT).pack(pady=(20, 10))
+
+        form_frame = ctk.CTkFrame(modal, fg_color="transparent")
+        form_frame.pack(fill="both", expand=True, padx=30, pady=10)
+
+        # Payment Method
+        ctk.CTkLabel(form_frame, text="Payment Method:", font=(FONT, 12, "bold"), text_color=C_TEXT_DIM).grid(row=0, column=0, sticky="w", pady=10)
+        payment_method_var = ctk.StringVar(value="Cash")
+        payment_cb = ctk.CTkComboBox(form_frame, variable=payment_method_var, values=["Cash", "Online Payment"], width=160, state="readonly")
+        payment_cb.grid(row=0, column=1, sticky="e", pady=10)
+
+        # Total Bill Amount (Read-only)
+        ctk.CTkLabel(form_frame, text="Total Bill:", font=(FONT, 12, "bold"), text_color=C_TEXT_DIM).grid(row=1, column=0, sticky="w", pady=10)
+        ctk.CTkLabel(form_frame, text=f"PKR {final_total:.2f}", font=(FONT, 14, "bold"), text_color=C_ACCENT).grid(row=1, column=1, sticky="e", pady=10)
+
+        # Received Amount
+        ctk.CTkLabel(form_frame, text="Received Amount:", font=(FONT, 12, "bold"), text_color=C_TEXT_DIM).grid(row=2, column=0, sticky="w", pady=10)
+        
+        def validate_numeric(P):
+            if P == "" or P == ".":
+                return True
+            try:
+                float(P)
+                return True
+            except ValueError:
+                return False
+
+        vcmd = (modal.register(validate_numeric), '%P')
+        received_var = ctk.StringVar()
+        received_entry = ctk.CTkEntry(form_frame, textvariable=received_var, width=160, validate="key", validatecommand=vcmd)
+        received_entry.grid(row=2, column=1, sticky="e", pady=10)
+
+        # Change Amount
+        ctk.CTkLabel(form_frame, text="Change:", font=(FONT, 12, "bold"), text_color=C_TEXT_DIM).grid(row=3, column=0, sticky="w", pady=10)
+        change_label = ctk.CTkLabel(form_frame, text="PKR 0.00", font=(FONT, 14, "bold"), text_color=C_SUCCESS)
+        change_label.grid(row=3, column=1, sticky="e", pady=10)
+
+        def calculate_change(*args):
+            try:
+                rec_amount = float(received_var.get())
+                change = rec_amount - final_total
+                if change < 0:
+                    change_label.configure(text="Insufficient", text_color=C_DANGER)
+                else:
+                    change_label.configure(text=f"PKR {change:.2f}", text_color=C_SUCCESS)
+            except ValueError:
+                change_label.configure(text="PKR 0.00", text_color=C_SUCCESS)
+
+        received_var.trace_add("write", calculate_change)
+
+        def on_confirm():
+            try:
+                rec_amount = float(received_var.get())
+            except ValueError:
+                self._toast("⚠  Please enter a valid received amount!", ms=2000)
+                return
+
+            if rec_amount < final_total:
+                self._toast("⚠  Received amount is less than total!", ms=2000)
+                return
             
+            change = rec_amount - final_total
+            paid_by = payment_method_var.get()
+            
+            modal.destroy()
+            self._finalize_bill(paid_by, rec_amount, change)
+
+        # Buttons
+        btn_frame = ctk.CTkFrame(modal, fg_color="transparent")
+        btn_frame.pack(fill="x", padx=30, pady=(10, 20))
+
+        ctk.CTkButton(btn_frame, text="Cancel", font=(FONT, 12, "bold"), fg_color="#3B1A1A", hover_color=C_DANGER, command=modal.destroy, width=100).pack(side="left")
+        ctk.CTkButton(btn_frame, text="Confirm & Print", font=(FONT, 12, "bold"), fg_color=C_SUCCESS, hover_color="#2EA043", command=on_confirm, width=140).pack(side="right")
+
+    def _finalize_bill(self, paid_by, received_amount, change_amount):
         import uuid
         tracking_id = "TRK-" + datetime.now().strftime("%Y%m%d%H%M%S") + "-" + str(uuid.uuid4().hex[:4]).upper()
         
@@ -2002,6 +2108,35 @@ class InventoryApp(ctk.CTk):
                 
         self._toast(f"✅  Bill Confirmed: {total_items} items sold. ID: {tracking_id}")
         play_beep(True)
+        
+        # --- Generate Receipt ---
+        print_data = {
+            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "customer_type": "Walk in Customer",
+            "transaction_id": tracking_id,
+            "cashier_name": getattr(self, "_current_user", "Admin"),
+            "items": [],
+            "total": final_total,
+            "paid_by": paid_by,
+            "received_amount": received_amount,
+            "change_amount": change_amount
+        }
+        for bc, item in self._current_bill.items():
+            price = item["price"]
+            qty = item["qty"]
+            print_data["items"].append({
+                "name": item["name"],
+                "price": price,
+                "discount": 0.0,  # Global discount applied at subtotal level
+                "discount_price": price,
+                "quantity": qty,
+                "total": price * qty
+            })
+            
+        import threading, asyncio
+        from printer_module import print_transaction_receipt
+        threading.Thread(target=lambda: asyncio.run(print_transaction_receipt(print_data)), daemon=True).start()
+        # ------------------------
         self._clear_bill()
         
         if "inventory" in self._views:
