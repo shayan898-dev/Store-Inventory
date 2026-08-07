@@ -2002,6 +2002,36 @@ class InventoryApp(ctk.CTk):
                 
         self._toast(f"✅  Bill Confirmed: {total_items} items sold. ID: {tracking_id}")
         play_beep(True)
+        
+        # --- Generate Receipt ---
+        print_data = {
+            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "customer_type": "Walk in Customer",
+            "transaction_id": tracking_id,
+            "cashier_name": getattr(self, "_current_user", "Admin"),
+            "items": [],
+            "total": final_total,
+            "paid_by": "Cash",
+            "received_amount": final_total,
+            "change_amount": 0.0
+        }
+        for bc, item in self._current_bill.items():
+            price = item["price"]
+            qty = item["qty"]
+            print_data["items"].append({
+                "name": item["name"],
+                "price": price,
+                "discount": 0.0,  # Global discount applied at subtotal level
+                "discount_price": price,
+                "quantity": qty,
+                "total": price * qty
+            })
+            
+        import threading, asyncio
+        from printer_module import print_transaction_receipt
+        threading.Thread(target=lambda: asyncio.run(print_transaction_receipt(print_data)), daemon=True).start()
+        # ------------------------
+
         self._clear_bill()
         
         if "inventory" in self._views:
