@@ -871,7 +871,7 @@ class InventoryApp(ctk.CTk):
         self.role_id = self.security.get_role_id_by_name(user_role.lower())
 
         # Window
-        self.title(f"Inventory Manager Pro (Logged in as: {self.username} [{self.user_role.capitalize()}])")
+        self.title(f"Inventory Manager Pro (Logged in as: {self.username})")
         self.geometry("1260x780")
         self.minsize(980, 620)
         self.configure(fg_color=C_BG)
@@ -953,22 +953,20 @@ class InventoryApp(ctk.CTk):
         nav_items = []
         
         # Build nav based on granular permissions
-        if self.security.has_permission(self.role_id, "view_inventory"):
+        if self.security.has_permission(self.username, "manage_inventory"):
             nav_items.append(("inventory", "📦", "Inventory"))
-        if self.security.has_permission(self.role_id, "process_sale"):
-            nav_items.append(("sales", "🛒", "Sales"))
-        if self.security.has_permission(self.role_id, "process_refund"):
-            nav_items.append(("refund", "↩", "Refund"))
-        if self.security.has_permission(self.role_id, "process_restock"):
+        if self.security.has_permission(self.username, "pos_checkout"):
+            nav_items.append(("sales", "🛒", "Sales & POS"))
+        if self.security.has_permission(self.username, "process_refunds"):
+            nav_items.append(("refund", "↩", "Refunds"))
+        if self.security.has_permission(self.username, "manage_inventory"):
             nav_items.append(("restock", "📥", "Restock"))
-        if self.security.has_permission(self.role_id, "view_transactions"):
-            nav_items.append(("transactions", "🧾", "Transactions"))
-        if self.security.has_permission(self.role_id, "view_reports"):
-            nav_items.append(("reports", "📊", "Reports"))
-        if self.security.has_permission(self.role_id, "manage_staff"):
-            nav_items.append(("staff", "👥", "Staff"))
-        if self.security.has_permission(self.role_id, "access_settings"):
-            nav_items.append(("settings", "⚙", "Settings"))
+        if self.security.has_permission(self.username, "view_history"):
+            nav_items.append(("transactions", "📋", "Transactions"))
+            nav_items.append(("reports", "📈", "Reports"))
+        if self.security.has_permission(self.username, "system_admin"):
+            nav_items.append(("members", "👥", "Members"))
+        nav_items.append(("settings", "⚙", "Settings"))
 
         for name, icon, label in nav_items:
             btn = SidebarButton(sb, text=label, icon=icon,
@@ -1053,7 +1051,7 @@ class InventoryApp(ctk.CTk):
             self._settings_refresh()
 
     def _require_permission(self, permission_name: str, action_desc: str) -> bool:
-        if self.security.has_permission(self.role_id, permission_name):
+        if self.security.has_permission(self.username, permission_name):
             return True
         # Prompt for manager override
         dlg = ManagerOverrideDialog(self, self.security, action_desc)
@@ -2979,12 +2977,17 @@ class InventoryApp(ctk.CTk):
         self.settings_tabs = ctk.CTkTabview(view, width=800, height=500, segmented_button_selected_color=C_ACCENT, segmented_button_selected_hover_color=C_ACCENT_HVR)
         self.settings_tabs.pack(fill="both", expand=True, padx=40, pady=(0, 40))
         
-        t1 = self.settings_tabs.add("Store Profile")
-        t2 = self.settings_tabs.add("Hardware")
-        t3 = self.settings_tabs.add("Rules & Security")
-        t4 = self.settings_tabs.add("Members")
+        show_general = self.security.has_permission(self.username, "system_admin")
+        show_hw = self.security.has_permission(self.username, "config_hardware")
+        show_sales = self.security.has_permission(self.username, "apply_discounts") or self.security.has_permission(self.username, "process_refunds")
+        show_users = self.security.has_permission(self.username, "system_admin")
         
-        # ==================== Store Profile ====================
+        t1 = self.settings_tabs.add("General Preferences") if show_general else None
+        t2 = self.settings_tabs.add("Hardware Configuration") if show_hw else None
+        t3 = self.settings_tabs.add("Sales & Transactions") if show_sales else None
+        t4 = self.settings_tabs.add("User Management") if show_users else None
+        t5 = self.settings_tabs.add("Personal Profile")
+        
         self.setting_vars = {}
         
         def add_setting_row(parent, label_text, key, default_val=""):
@@ -2996,76 +2999,130 @@ class InventoryApp(ctk.CTk):
             entry = ctk.CTkEntry(row, textvariable=var, width=300, font=(FONT, 13))
             entry.pack(side="left", padx=10)
             
-        add_setting_row(t1, "Store Name:", "store_name", "My Store")
-        add_setting_row(t1, "Address:", "store_address", "")
-        add_setting_row(t1, "Phone Number:", "store_phone", "")
-        add_setting_row(t1, "Receipt Header:", "receipt_header", "Welcome to My Store!")
-        add_setting_row(t1, "Receipt Footer:", "receipt_footer", "Thank you for shopping with us!")
-        
-        # Hardware Elements
-        add_setting_row(t2, "Printer Name/COM Port:", "printer_port", "COM1")
-        
-        # Auto-print is a switch
-        row_ap = ctk.CTkFrame(t2, fg_color="transparent")
-        row_ap.pack(fill="x", pady=10, padx=20)
-        ctk.CTkLabel(row_ap, text="Auto-Print Receipt:", width=200, anchor="w", font=(FONT, 13)).pack(side="left")
-        var_ap = ctk.StringVar(value=self.db.get_setting("auto_print", "0"))
-        self.setting_vars["auto_print"] = var_ap
-        switch_ap = ctk.CTkSwitch(row_ap, text="", variable=var_ap, onvalue="1", offvalue="0")
-        switch_ap.pack(side="left", padx=10)
-        
-        # Rules & Security
-        add_setting_row(t3, "Default Tax Rate (%):", "tax_rate", "0.0")
-        add_setting_row(t3, "Max Discount (%):", "max_discount", "100.0")
-        
-        # ==================== Members Tab ====================
-        mem_form = ctk.CTkFrame(t4, fg_color="transparent")
-        mem_form.pack(fill="x", padx=20, pady=10)
-        
-        ctk.CTkLabel(mem_form, text="Username", font=(FONT, 11)).grid(row=0, column=0, padx=4, sticky="w")
-        ctk.CTkLabel(mem_form, text="Password (Optional for Edit)", font=(FONT, 11)).grid(row=0, column=1, padx=4, sticky="w")
-        ctk.CTkLabel(mem_form, text="Role", font=(FONT, 11)).grid(row=0, column=2, padx=4, sticky="w")
-        
-        self.e_mem_user = ctk.CTkEntry(mem_form, width=130, height=34, font=(FONT, 12))
-        self.e_mem_user.grid(row=1, column=0, padx=4)
-        self.e_mem_pass = ctk.CTkEntry(mem_form, width=130, height=34, font=(FONT, 12), show="*")
-        self.e_mem_pass.grid(row=1, column=1, padx=4)
-        
-        try:
-            with self.db._connect() as conn:
-                roles = [r["name"] for r in conn.execute("SELECT name FROM roles ORDER BY id ASC").fetchall()]
-        except Exception:
-            roles = ["admin", "staff", "manager", "cashier"]
+        # ==================== General Preferences ====================
+        if t1:
+            add_setting_row(t1, "Store Name:", "store_name", "My Store")
+            add_setting_row(t1, "Address:", "store_address", "")
+            add_setting_row(t1, "Phone Number:", "store_phone", "")
+            add_setting_row(t1, "Receipt Header:", "receipt_header", "Welcome to My Store!")
+            add_setting_row(t1, "Receipt Footer:", "receipt_footer", "Thank you for shopping with us!")
             
-        self.e_mem_role = ctk.CTkComboBox(mem_form, values=roles, width=100, height=34, font=(FONT, 12))
-        self.e_mem_role.set("staff")
-        self.e_mem_role.grid(row=1, column=2, padx=4)
+        # ==================== Hardware Configuration ====================
+        if t2:
+            add_setting_row(t2, "Printer Name/COM Port:", "printer_port", "COM1")
+            
+            row_ap = ctk.CTkFrame(t2, fg_color="transparent")
+            row_ap.pack(fill="x", pady=10, padx=20)
+            ctk.CTkLabel(row_ap, text="Auto-Print Receipt:", width=200, anchor="w", font=(FONT, 13)).pack(side="left")
+            var_ap = ctk.StringVar(value=self.db.get_setting("auto_print", "0"))
+            self.setting_vars["auto_print"] = var_ap
+            switch_ap = ctk.CTkSwitch(row_ap, text="", variable=var_ap, onvalue="1", offvalue="0")
+            switch_ap.pack(side="left", padx=10)
+            
+        # ==================== Sales & Transactions ====================
+        if t3:
+            add_setting_row(t3, "Default Tax Rate (%):", "tax_rate", "0.0")
+            add_setting_row(t3, "Max Discount (%):", "max_discount", "100.0")
+            
+        # ==================== User Management ====================
+        if t4:
+            mem_form = ctk.CTkFrame(t4, fg_color="transparent")
+            mem_form.pack(fill="x", padx=20, pady=10)
+            
+            ctk.CTkLabel(mem_form, text="Username", font=(FONT, 11)).grid(row=0, column=0, padx=4, sticky="w")
+            ctk.CTkLabel(mem_form, text="Password (Optional for Edit)", font=(FONT, 11)).grid(row=0, column=1, padx=4, sticky="w")
+            
+            self.e_mem_user = ctk.CTkEntry(mem_form, width=130, height=34, font=(FONT, 12))
+            self.e_mem_user.grid(row=1, column=0, padx=4)
+            self.e_mem_pass = ctk.CTkEntry(mem_form, width=130, height=34, font=(FONT, 12), show="*")
+            self.e_mem_pass.grid(row=1, column=1, padx=4)
+            
+            self.cb_show_pass = ctk.CTkCheckBox(mem_form, text="Show", font=(FONT, 11), width=60, command=self._toggle_show_pass)
+            self.cb_show_pass.grid(row=1, column=2, padx=4)
+            
+            ctk.CTkButton(mem_form, text="＋ Add", width=70, height=34, font=(FONT, 12), fg_color=C_ACCENT, hover_color=C_ACCENT_HVR, command=self._add_member).grid(row=1, column=3, padx=4)
+            ctk.CTkButton(mem_form, text="Update", width=70, height=34, font=(FONT, 12), command=self._update_member).grid(row=1, column=4, padx=4)
+            
+            perm_frame = ctk.CTkFrame(mem_form, fg_color="transparent")
+            perm_frame.grid(row=2, column=0, columnspan=6, sticky="w", pady=(15, 0))
+            
+            self.perm_vars = {}
+            perms = [
+                ("POS Checkout", "pos_checkout"),
+                ("Inventory", "manage_inventory"),
+                ("Discounts", "apply_discounts"),
+                ("Refunds", "process_refunds"),
+                ("History", "view_history"),
+                ("Hardware", "config_hardware"),
+                ("Admin", "system_admin")
+            ]
+            for i, (label, pkey) in enumerate(perms):
+                var = ctk.IntVar(value=0)
+                self.perm_vars[pkey] = var
+                cb = ctk.CTkCheckBox(perm_frame, text=label, variable=var, font=(FONT, 10))
+                cb.grid(row=0, column=i, padx=4, pady=5)
+            
+            btn_del = ctk.CTkButton(t4, text="🗑 Delete Selected", fg_color="#3B1A1A", hover_color=C_DANGER, height=36, command=self._delete_member)
+            btn_del.pack(side="bottom", pady=(0, 20))
+            
+            mem_list = ctk.CTkFrame(t4, fg_color=C_CARD2)
+            mem_list.pack(side="top", fill="both", expand=True, padx=20, pady=(10, 20))
+            
+            vsb = ttk.Scrollbar(mem_list)
+            vsb.pack(side="right", fill="y")
+            self.mem_tree = ttk.Treeview(mem_list, columns=("username", "permissions"), show="headings", style="T.Treeview", yscrollcommand=vsb.set)
+            vsb.configure(command=self.mem_tree.yview)
+            self.mem_tree.heading("username", text="Username")
+            self.mem_tree.heading("permissions", text="Permissions")
+            self.mem_tree.column("username", width=150, anchor="w")
+            self.mem_tree.column("permissions", width=350, anchor="w")
+            self.mem_tree.pack(fill="both", expand=True, padx=2, pady=2)
+            self.mem_tree.bind("<<TreeviewSelect>>", self._on_member_select)
+            
+        # ==================== Personal Profile ====================
+        prof_frame = ctk.CTkFrame(t5, fg_color="transparent")
+        prof_frame.pack(fill="x", padx=40, pady=20)
+        ctk.CTkLabel(prof_frame, text=f"Logged in as: {self.username}", font=(FONT, 16, "bold")).pack(anchor="w", pady=(0, 20))
         
-        ctk.CTkButton(mem_form, text="＋ Add", width=70, height=34, font=(FONT, 12), fg_color=C_ACCENT, hover_color=C_ACCENT_HVR, command=self._add_member).grid(row=1, column=3, padx=4)
-        ctk.CTkButton(mem_form, text="Update", width=70, height=34, font=(FONT, 12), command=self._update_member).grid(row=1, column=4, padx=4)
+        ctk.CTkLabel(prof_frame, text="Update Password:", font=(FONT, 13)).pack(anchor="w")
+        self.e_prof_pass = ctk.CTkEntry(prof_frame, width=250, height=36, font=(FONT, 13), show="*")
+        self.e_prof_pass.pack(anchor="w", pady=(5, 10))
         
-        mem_list = ctk.CTkFrame(t4, fg_color=C_CARD2)
-        mem_list.pack(fill="both", expand=True, padx=20, pady=(10, 20))
+        ctk.CTkLabel(prof_frame, text="Confirm Password:", font=(FONT, 13)).pack(anchor="w")
+        self.e_prof_pass2 = ctk.CTkEntry(prof_frame, width=250, height=36, font=(FONT, 13), show="*")
+        self.e_prof_pass2.pack(anchor="w", pady=(5, 20))
         
-        vsb = ttk.Scrollbar(mem_list)
-        vsb.pack(side="right", fill="y")
-        self.mem_tree = ttk.Treeview(mem_list, columns=("username", "role"), show="headings", style="T.Treeview", yscrollcommand=vsb.set)
-        vsb.configure(command=self.mem_tree.yview)
-        self.mem_tree.heading("username", text="Username")
-        self.mem_tree.heading("role", text="Role")
-        self.mem_tree.column("username", width=220, anchor="center")
-        self.mem_tree.column("role", width=180, anchor="center")
-        self.mem_tree.pack(fill="both", expand=True, padx=2, pady=2)
-        self.mem_tree.bind("<<TreeviewSelect>>", self._on_member_select)
-        
-        ctk.CTkButton(t4, text="🗑 Delete Selected", fg_color="#3B1A1A", hover_color=C_DANGER, height=36, command=self._delete_member).pack(pady=(0, 20))
-        
-        # Save Button (for settings)
-        btn_frame = ctk.CTkFrame(view, fg_color="transparent")
-        btn_frame.pack(fill="x", padx=40, pady=(0, 30))
-        ctk.CTkButton(btn_frame, text="Save Settings", font=(FONT, 14, "bold"), fg_color=C_ACCENT, hover_color=C_ACCENT_HVR, height=40, command=self._save_settings).pack(side="right")
+        ctk.CTkButton(prof_frame, text="Change Password", fg_color=C_ACCENT, hover_color=C_ACCENT_HVR, command=self._change_own_password).pack(anchor="w")
+
+        # Save Button (for global settings, only show if they can edit settings)
+        if show_general or show_hw or show_sales:
+            btn_frame = ctk.CTkFrame(view, fg_color="transparent")
+            btn_frame.pack(fill="x", padx=40, pady=(0, 30))
+            ctk.CTkButton(btn_frame, text="Save Settings", font=(FONT, 14, "bold"), fg_color=C_ACCENT, hover_color=C_ACCENT_HVR, height=40, command=self._save_settings).pack(side="right")
         
         return view
+
+    def _toggle_show_pass(self):
+        if self.cb_show_pass.get() == 1:
+            self.e_mem_pass.configure(show="")
+        else:
+            self.e_mem_pass.configure(show="*")
+
+    def _change_own_password(self):
+        p1 = self.e_prof_pass.get()
+        p2 = self.e_prof_pass2.get()
+        if not p1: return
+        if p1 != p2:
+            import tkinter.messagebox as messagebox
+            messagebox.showerror("Error", "Passwords do not match.")
+            return
+        if self.db.update_own_password(self.username, p1):
+            self.e_prof_pass.delete(0, "end")
+            self.e_prof_pass2.delete(0, "end")
+            self._toast("✅ Password changed successfully.")
+        else:
+            import tkinter.messagebox as messagebox
+            messagebox.showerror("Error", "Could not change password.")
 
     def _settings_refresh(self):
         # Refresh values from DB
@@ -3077,7 +3134,8 @@ class InventoryApp(ctk.CTk):
         for row in self.mem_tree.get_children():
             self.mem_tree.delete(row)
         for u in self.db.get_all_users():
-            self.mem_tree.insert("", "end", iid=u["username"], values=(u["username"], u["role"]))
+            perms = ", ".join(u.get("permissions", []))
+            self.mem_tree.insert("", "end", iid=u["username"], values=(u["username"], perms))
             
     def _on_member_select(self, event):
         sel = self.mem_tree.selection()
@@ -3086,18 +3144,26 @@ class InventoryApp(ctk.CTk):
         self.e_mem_user.delete(0, "end")
         self.e_mem_user.insert(0, user)
         self.e_mem_pass.delete(0, "end")
-        item = self.mem_tree.item(user)
-        self.e_mem_role.set(item["values"][1])
+        
+        for var in self.perm_vars.values():
+            var.set(0)
+            
+        for u in self.db.get_all_users():
+            if u["username"] == user:
+                for p in u.get("permissions", []):
+                    if p in self.perm_vars:
+                        self.perm_vars[p].set(1)
+                break
         
     def _add_member(self):
-        if not self._require_permission("manage_staff", "Manage Members"): return
+        if not self._require_permission("system_admin", "Manage Members"): return
         user = self.e_mem_user.get().strip().lower()
         pwd = self.e_mem_pass.get().strip()
-        role = self.e_mem_role.get().strip().lower()
+        perms = [k for k, v in self.perm_vars.items() if v.get() == 1]
         if not user or not pwd:
             messagebox.showerror("Error", "Username and password required.")
             return
-        if self.db.add_user(user, pwd, role):
+        if self.db.add_user(user, pwd, perms):
             self._refresh_members()
             self.e_mem_user.delete(0, "end")
             self.e_mem_pass.delete(0, "end")
@@ -3106,21 +3172,21 @@ class InventoryApp(ctk.CTk):
             messagebox.showerror("Error", "Could not add user. Username may already exist.")
             
     def _update_member(self):
-        if not self._require_permission("manage_staff", "Manage Members"): return
+        if not self._require_permission("system_admin", "Manage Members"): return
         user = self.e_mem_user.get().strip().lower()
         pwd = self.e_mem_pass.get().strip()
-        role = self.e_mem_role.get().strip().lower()
+        perms = [k for k, v in self.perm_vars.items() if v.get() == 1]
         if not user:
             messagebox.showwarning("Warning", "Please select a user to update.")
             return
-        if self.db.update_user(user, pwd if pwd else None, role):
+        if self.db.update_user(user, pwd if pwd else None, perms):
             self._refresh_members()
             self._toast(f"✅ User {user} updated.")
         else:
             messagebox.showerror("Error", "Could not update user.")
             
     def _delete_member(self):
-        if not self._require_permission("manage_staff", "Manage Members"): return
+        if not self._require_permission("system_admin", "Manage Members"): return
         sel = self.mem_tree.selection()
         if not sel: return
         user = sel[0]

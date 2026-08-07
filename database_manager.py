@@ -175,6 +175,14 @@ class DatabaseManager:
             """)
 
             # ---- Security & Users ----
+            conn.execute('''
+                CREATE TABLE IF NOT EXISTS user_permissions (
+                    username TEXT,
+                    permission_name TEXT,
+                    PRIMARY KEY (username, permission_name)
+                );
+            ''')
+
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS roles (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -268,6 +276,22 @@ class DatabaseManager:
                         INSERT INTO role_permissions (role_id, permission_id) 
                         VALUES ((SELECT id FROM roles WHERE name='staff'), (SELECT id FROM permissions WHERE name=?));
                     """, (sp,))
+                    
+                # Grant manager permissions
+                manager_perms = ['view_inventory', 'process_sale', 'edit_product', 'add_product', 'delete_product', 'apply_discount', 'process_refund', 'process_restock', 'view_reports', 'view_transactions', 'access_settings']
+                for mp in manager_perms:
+                    conn.execute("""
+                        INSERT INTO role_permissions (role_id, permission_id) 
+                        VALUES ((SELECT id FROM roles WHERE name='manager'), (SELECT id FROM permissions WHERE name=?));
+                    """, (mp,))
+                    
+                # Grant cashier permissions
+                cashier_perms = ['view_inventory', 'process_sale']
+                for cp in cashier_perms:
+                    conn.execute("""
+                        INSERT INTO role_permissions (role_id, permission_id) 
+                        VALUES ((SELECT id FROM roles WHERE name='cashier'), (SELECT id FROM permissions WHERE name=?));
+                    """, (cp,))
                     
             # Seed default users if empty
             cur = conn.execute("SELECT COUNT(*) FROM users;")
@@ -915,7 +939,7 @@ class DatabaseManager:
     # ------------------------------------------------------------------
 
     def authenticate_user(self, username: str, password: str) -> Optional[str]:
-        """Verifies credentials. Returns the user's role ('admin' or 'staff' etc) if valid, else None."""
+        """Verifies credentials. Returns 'Custom' if valid, else None."""
         sql = "SELECT password_hash, role_id FROM users WHERE username = ? AND status = 'Active';"
         with self._connect() as conn:
             row = conn.execute(sql, (username.strip().lower(),)).fetchone()
@@ -923,66 +947,85 @@ class DatabaseManager:
                 phash = row["password_hash"]
                 if bcrypt.checkpw(password.encode('utf-8'), phash.encode('utf-8')):
                     r_id = row["role_id"]
-                    r_name = conn.execute("SELECT name FROM roles WHERE id=?", (r_id,)).fetchone()
-                    return r_name["name"] if r_name else None
+                    if r_id:
+                        r_name = conn.execute("SELECT name FROM roles WHERE id=?", (r_id,)).fetchone()
+                        return r_name["name"] if r_name else "Custom"
+                    return "Custom"
             return None
 
     def get_all_users(self) -> list[dict]:
-        """Returns all login accounts sorted alphabetically."""
+        """Returns all login accounts and their permissions."""
         sql = '''
-            SELECT u.username, r.name as role 
-            FROM users u
-            JOIN roles r ON u.role_id = r.id
-            ORDER BY u.username ASC;
+            SELECT username
+            FROM users
+            ORDER BY username ASC;
         '''
         with self._connect() as conn:
-            return [dict(r) for r in conn.execute(sql).fetchall()]
+            users = [dict(r) for r in conn.execute(sql).fetchall()]
+            for u in users:
+                perms = conn.execute("SELECT permission_name FROM user_permissions WHERE username=?", (u["username"],)).fetchall()
+                u["permissions"] = [p["permission_name"] for p in perms]
+                u["role"] = "Custom" # For UI compatibility if needed temporarily
+            return users
 
-    def add_user(self, username: str, password: str, role: str) -> bool:
-        """Adds a new user account."""
+    def add_user(self, username: str, password: str, permissions: list) -> bool:
+        """Adds a new user account with specific permissions."""
         try:
+            uname = username.strip().lower()
             phash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
             with self._connect() as conn:
-                r_id = conn.execute("SELECT id FROM roles WHERE name=?", (role.strip().lower(),)).fetchone()
-                if not r_id:
-                    return False
-                role_id = r_id["id"]
-                conn.execute("INSERT INTO users (username, password_hash, role_id) VALUES (?, ?, ?);", 
-                             (username.strip().lower(), phash, role_id))
+                conn.execute("INSERT INTO users (username, password_hash, role_id) VALUES (?, ?, NULL);", 
+                             (uname, phash))
+                for p in permissions:
+                    conn.execute("INSERT INTO user_permissions (username, permission_name) VALUES (?, ?)", (uname, p))
                 conn.commit()
             return True
         except Exception as e:
             print(f"[DB] Error adding user: {e}")
             return False
 
-    def update_user(self, username: str, new_password: str | None, new_role: str) -> bool:
-        """Updates an existing user account's role and optionally password."""
+    def update_user(self, username: str, new_password: str | None, permissions: list) -> bool:
+        """Updates an existing user account's permissions and optionally password."""
         try:
+            uname = username.strip().lower()
             with self._connect() as conn:
-                r_id = conn.execute("SELECT id FROM roles WHERE name=?", (new_role.strip().lower(),)).fetchone()
-                if not r_id:
-                    return False
-                role_id = r_id["id"]
-                
                 if new_password:
                     phash = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-                    conn.execute("UPDATE users SET password_hash = ?, role_id = ? WHERE username = ?;",
-                                 (phash, role_id, username.strip().lower()))
-                else:
-                    conn.execute("UPDATE users SET role_id = ? WHERE username = ?;",
-                                 (role_id, username.strip().lower()))
+                    conn.execute("UPDATE users SET password_hash = ? WHERE username = ?;",
+                                 (phash, uname))
+                
+                # Replace permissions
+                conn.execute("DELETE FROM user_permissions WHERE username = ?", (uname,))
+                for p in permissions:
+                    conn.execute("INSERT INTO user_permissions (username, permission_name) VALUES (?, ?)", (uname, p))
                 conn.commit()
             return True
         except Exception as e:
             print(f"[DB] Error updating user: {e}")
             return False
 
+    def update_own_password(self, username: str, new_password: str) -> bool:
+        """Allows a user to securely update their own password."""
+        try:
+            phash = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+            with self._connect() as conn:
+                conn.execute("UPDATE users SET password_hash = ? WHERE username = ?;",
+                             (phash, username.strip().lower()))
+                conn.commit()
+            return True
+        except Exception as e:
+            print(f"[DB] Error updating own password: {e}")
+            return False
+
     def delete_user(self, username: str) -> bool:
         """Deletes an existing user account."""
-        sql = "DELETE FROM users WHERE username = ?;"
+        sql1 = "DELETE FROM users WHERE username = ?;"
+        sql2 = "DELETE FROM user_permissions WHERE username = ?;"
         try:
+            uname = username.strip().lower()
             with self._connect() as conn:
-                conn.execute(sql, (username.strip().lower(),))
+                conn.execute(sql1, (uname,))
+                conn.execute(sql2, (uname,))
                 conn.commit()
             return True
         except Exception as e:

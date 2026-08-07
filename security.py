@@ -3,25 +3,13 @@ import customtkinter as ctk
 
 # Pre-defined permissions for our app
 PERMISSIONS = {
-    # System
-    "access_settings": "Access the Settings Dashboard",
-    # Inventory
-    "add_product": "Add new products",
-    "edit_product": "Edit existing products",
-    "delete_product": "Delete products",
-    "view_inventory": "View the inventory list",
-    # Sales
-    "process_sale": "Process sales and print receipts",
-    "apply_discount": "Apply discounts to bills",
-    # Refund
-    "process_refund": "Process refunds",
-    # Restock
-    "process_restock": "Add stock to products",
-    # Reports
-    "view_reports": "View financial and sales reports",
-    "view_transactions": "View past transactions",
-    # Staff
-    "manage_staff": "Add, edit, or delete staff members and users"
+    "pos_checkout": "Point of Sale (Checkout)",
+    "manage_inventory": "Inventory Management",
+    "apply_discounts": "Discount Controls",
+    "process_refunds": "Refund Tracking",
+    "view_history": "Transaction History",
+    "config_hardware": "Hardware Settings",
+    "system_admin": "System Administration"
 }
 
 class SecurityManager:
@@ -43,15 +31,14 @@ class SecurityManager:
             # Handles cases where hashed_password is not a valid bcrypt hash
             return False
 
-    def has_permission(self, role_id: int, permission_name: str) -> bool:
-        """Checks if a given role ID has a specific permission."""
+    def has_permission(self, username: str, permission_name: str) -> bool:
+        """Checks if a given user has a specific permission."""
         try:
             with self.db._connect() as conn:
                 cur = conn.execute("""
-                    SELECT 1 FROM role_permissions rp
-                    JOIN permissions p ON rp.permission_id = p.id
-                    WHERE rp.role_id = ? AND p.name = ?
-                """, (role_id, permission_name))
+                    SELECT 1 FROM user_permissions
+                    WHERE username = ? AND permission_name = ?
+                """, (username.strip().lower(), permission_name))
                 return cur.fetchone() is not None
         except Exception as e:
             print(f"Error checking permission: {e}")
@@ -78,13 +65,13 @@ class SecurityManager:
             return -1
 
     def authenticate_admin(self, password: str) -> bool:
-        """Authenticates specifically against any user with the 'admin' role."""
+        """Authenticates specifically against any user with the 'system_admin' permission."""
         try:
             with self.db._connect() as conn:
                 cur = conn.execute("""
                     SELECT u.password_hash FROM users u
-                    JOIN roles r ON u.role_id = r.id
-                    WHERE r.name = 'admin' AND u.status = 'Active'
+                    JOIN user_permissions up ON u.username = up.username
+                    WHERE up.permission_name = 'system_admin' AND u.status = 'Active'
                 """)
                 
                 for row in cur.fetchall():
