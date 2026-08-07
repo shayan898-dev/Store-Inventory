@@ -1,13 +1,23 @@
 import asyncio
 import logging
-from datetime import datetime
 import os
-from PIL import Image, ImageDraw, ImageFont
-import arabic_reshaper
-from bidi.algorithm import get_display
+from datetime import datetime
 
-from escpos.printer import Usb, Network
+from escpos.printer import Usb, Network, Win32Raw
 from escpos.exceptions import Error as EscposError
+
+def _find_windows_printer():
+    try:
+        import win32print
+        printers = win32print.EnumPrinters(win32print.PRINTER_ENUM_LOCAL)
+        keywords = ["pos", "receipt", "thermal", "xp-", "tm-", "80mm", "58mm", "printer"]
+        for printer_info in printers:
+            name = printer_info[2]
+            if any(k in name.lower() for k in keywords):
+                return name
+        return None
+    except ImportError:
+        return None
 
 logger = logging.getLogger(__name__)
 
@@ -15,191 +25,132 @@ logger = logging.getLogger(__name__)
 # PRINTER CONFIGURATION
 # ==========================================
 # Set to True to use the local network emulator on port 9100 instead of USB hardware
-TEST_MODE = True
+TEST_MODE = False
 
 # Replace these with your actual thermal printer's USB Vendor ID and Product ID.
-VENDOR_ID = 0x04b8  # Example: Epson
-PRODUCT_ID = 0x0202 # Example: Epson TM-T20II
-
-def _generate_urdu_tc_image() -> str:
-    """
-    Generates an image containing the Urdu terms and conditions and returns the path to the temp image.
-    """
-    urdu_text = (
-        "بغیر بل کے کوئ چیز تبدیل یا واپس نہین ہوگی\n"
-        "فروزن آئٹم کی تبدیلی یا واپسی نہین ہوگی\n"
-        "کوئ بہی چیز واپسی یا تبدیلی کرنی ہوتو سات دن کے\n"
-        "اندر ہوگی\n"
-        "کھلونے اور کراکری کی واپسی یا تبدیلی نہین ہوگی موقع\n"
-        "پر چیک کرلین"
-    )
-    
-    # Try to load a font. Use arial as default fallback.
-    font_path = "arial.ttf"
-    if os.path.exists("Jameel Noori Nastaleeq.ttf"):
-        font_path = "Jameel Noori Nastaleeq.ttf"
-        
-    try:
-        font = ImageFont.truetype(font_path, 22)
-    except IOError:
-        # Fallback to default if arial is missing
-        font = ImageFont.load_default()
-        
-    # Process text for RTL
-    lines = urdu_text.split('\n')
-    processed_lines = []
-    for line in lines:
-        reshaped = arabic_reshaper.reshape(line)
-        bidi_text = get_display(reshaped)
-        processed_lines.append(bidi_text)
-        
-    # Calculate image height
-    line_spacing = 8
-    img_width = 512 # Standard 80mm width in dots (approx)
-    
-    # We need a dummy draw object to measure text accurately
-    dummy_img = Image.new('RGB', (1, 1))
-    dummy_draw = ImageDraw.Draw(dummy_img)
-    
-    # Measure line heights
-    total_height = 20
-    line_heights = []
-    for line in processed_lines:
-        bbox = dummy_draw.textbbox((0, 0), line, font=font)
-        h = bbox[3] - bbox[1]
-        line_heights.append(h)
-        total_height += h + line_spacing
-        
-    img = Image.new('RGB', (img_width, total_height), color='white')
-    draw = ImageDraw.Draw(img)
-    
-    y = 10
-    for i, line in enumerate(processed_lines):
-        # Get text bounding box to center it
-        bbox = draw.textbbox((0, 0), line, font=font)
-        text_w = bbox[2] - bbox[0]
-        x = (img_width - text_w) / 2
-        draw.text((x, y), line, font=font, fill='black')
-        y += line_heights[i] + line_spacing
-        
-    img_path = "temp_urdu_tc.png"
-    img.save(img_path)
-    return img_path
-
-def _format_item_line(name, price, disc, dis_price, qty, total):
-    """
-    Columns: Product(12) | Price(6) | Disc(4) | Dis Price(6) | Qty(3) | Total(7)
-    Total width = 12+1+6+1+4+1+6+1+3+1+7 = 42
-    """
-    name_str = (name[:10] + "..") if len(name) > 12 else name.ljust(12)
-    price_str = f"{float(price):.0f}".rjust(6)
-    disc_str = f"{float(disc):.0f}".rjust(4)
-    dis_price_str = f"{float(dis_price):.0f}".rjust(6)
-    qty_str = str(qty).rjust(3)
-    total_str = f"{float(total):.0f}".rjust(7)
-    
-    return f"{name_str} {price_str} {disc_str} {dis_price_str} {qty_str} {total_str}"
+VENDOR_ID = 0x04b8  
+PRODUCT_ID = 0x0202 
 
 def _do_print_receipt(data: dict) -> bool:
     try:
         if TEST_MODE:
-            p = Network("localhost", port=9100, profile="TM-T88III")
+            printer = Network("localhost", port=9100, profile="TM-T88III")
         else:
-            p = Usb(VENDOR_ID, PRODUCT_ID, profile="TM-T88III")
+            win_printer_name = _find_windows_printer()
+            if win_printer_name:
+                logger.info(f"Auto-detected Windows printer: {win_printer_name}")
+                printer = Win32Raw(win_printer_name)
+            else:
+                logger.info("Falling back to direct USB connection.")
+                printer = Usb(VENDOR_ID, PRODUCT_ID, profile="TM-T88III")
             
+        # Extract variables from data dictionary to match the new structure
+        transaction_id = data.get("transaction_id", "")
+        items = data.get("items", [])
+        paid_by = data.get("paid_by", "Cash")
+        rec_amount = float(data.get("received_amount", 0.0))
+        change = float(data.get("change_amount", 0.0))
+        customer_id = transaction_id  # Using transaction_id as customer_id for barcode per user prompt
+        
         # 1. Header (Logo & Name)
-        p.set(align="center")
-        if os.path.exists("logo.png"):
-            p.image("logo.png")
-            
-        p.set(align="center", bold=True, double_width=True, double_height=True)
-        p.text("Dua Pharmacy\n")
+        printer.set(align='center')
+        # printer.image("logo.png") # Uncomment and ensure the path to our logo is correct
         
-        p.set(align="center", bold=False, double_width=False, double_height=False)
-        p.text("Main baranch\n")
-        p.text("03XX-XXXXXXX\n")
-        p.text("-" * 42 + "\n")
+        printer.set(align='center', bold=True, double_width=True, double_height=True)
+        printer.text("Dua Pharmacy\n")
         
+        printer.set(align='center', bold=False, double_width=False, double_height=False)
+        printer.text("Main baranch\n")
+        printer.text("03XX-XXXXXXX\n\n")
+
         # 2. Transaction Meta
-        p.set(align="left")
-        p.text(f"Date/Time: {data.get('timestamp', '')}\n")
-        p.text(f"Customer Type: {data.get('customer_type', 'Walk in Customer')}\n")
-        p.text(f"Customer Points: {data.get('transaction_id', '')}\n")
-        p.text(f"Cashier Name: {data.get('cashier_name', 'ABC')}\n")
-        p.text("-" * 42 + "\n")
-        
+        printer.set(align='left')
+        current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        printer.text(f"Date/Time: {current_time}\n")
+        printer.text("Customer Type: Walk in Customer\n")
+        printer.text(f"Customer Points: {transaction_id}\n")
+        printer.text(f"Cashier Name: {data.get('cashier_name', 'ABC')}\n\n")
+
         # 3. Itemized List & Subtotals
-        p.set(align="left", bold=True)
-        p.text("Product      Price  Disc DPrice Qty   Total\n")
-        p.set(bold=False)
-        
+        # 80mm paper = exactly 48 characters per line
+        header_format = "{:<14} {:>6} {:>5} {:>8} {:>4} {:>7}\n"
+        printer.text(header_format.format("Product", "Price", "Disc", "DisPrice", "Qty", "Total"))
+        printer.text("-" * 48 + "\n")
+
         total_disc = 0
         total_qty = 0
-        
-        for item in data.get("items", []):
-            line = _format_item_line(
-                item.get("name", ""),
-                item.get("price", 0),
-                item.get("discount", 0),
-                item.get("discount_price", 0),
-                item.get("quantity", 0),
-                item.get("total", 0)
-            )
-            p.text(f"{line}\n")
-            total_disc += float(item.get("discount", 0))
-            total_qty += int(item.get("quantity", 0))
+        grand_total = 0
+
+        for item in items:
+            # Truncate product name to 14 chars to prevent line wrapping
+            prod = str(item.get('name', ''))[:14]
+            price = f"{float(item.get('price', 0)):.2f}"
             
-        p.set(align="right")
-        p.text("-" * 23 + "\n") # Dashed line under the math columns
+            disc_val = float(item.get('discount', 0))
+            disc = f"{disc_val:.0f}"
+            
+            dis_price_val = float(item.get('discount_price', 0))
+            dis_price = f"{dis_price_val:.2f}"
+            
+            qty_val = int(item.get('quantity', 0))
+            qty = f"{qty_val}"
+            
+            total_val = float(item.get('total', 0))
+            total = f"{total_val:.2f}"
+
+            total_disc += disc_val
+            total_qty += qty_val
+            grand_total += total_val
+
+            printer.text(header_format.format(prod, price, disc, dis_price, qty, total))
+
+        printer.set(align='right')
+        printer.text("-" * 30 + "\n")
+
+        printer.set(align='left')
+        subtotal_line = header_format.format(
+            "SUBTOTAL", "", f"{total_disc:.0f}", "", f"{total_qty}", f"{grand_total:.2f}"
+        )
+        printer.text(subtotal_line)
         
-        # Subtotal line
-        disc_str = f"{total_disc:.0f}".rjust(4)
-        qty_str = str(total_qty).rjust(3)
-        final_total = float(data.get("total", 0))
-        tot_str = f"{final_total:.0f}".rjust(7)
-        
-        # Space alignment: Product(12) + Space(1) + Price(6) + Space(1) = 20
-        dprice_empty = "      " # 6 spaces
-        subtotal_line = f"{'Subtotal:'.ljust(20)}{disc_str} {dprice_empty} {qty_str} {tot_str}"
-        
-        p.set(align="left", bold=True)
-        p.text(f"{subtotal_line}\n")
-        p.set(bold=False)
-        p.text("-" * 42 + "\n")
-        
+        printer.set(align='right')
+        printer.text("-" * 30 + "\n\n")
+
         # 4. Payment Details
-        p.set(align="center")
-        p.text("Paid By:      Rec Amount:         Change:\n")
+        printer.set(align='center')
+        payment_format = "{:^16}{:^16}{:^16}\n"
+        printer.text(payment_format.format("Paid By:", "Rec Amount:", "Change:"))
+        printer.text(payment_format.format(str(paid_by), f"{rec_amount:.2f}", f"{change:.2f}"))
+        printer.text("\n")
+
+        # 5. Terms & Conditions
+        printer.set(align='left')
+        printer.text("-" * 48 + "\n")
+        printer.text("No items will be exchanged or returned without a receipt.\n")
+        printer.text("Frozen items cannot be exchanged or returned.\n")
+        printer.text("Any exchange or return must be made within seven days.\n")
+        printer.text("Toys and crockery are not eligible for return or exchange;\n")
+        printer.text("please check them on the spot.\n")
+        printer.text("-" * 48 + "\n\n")
         
-        paid_by = str(data.get("paid_by", "Cash")).center(12)
-        rec_amt = str(data.get("received_amount", "0")).center(15)
-        change = f"{float(data.get('change_amount', 0)):.2f}".center(13)
-        
-        p.text(f"{paid_by} {rec_amt} {change}\n")
-        p.text("\nThank You\n\n")
-        
-        # 5. Urdu Terms & Conditions
-        tc_img_path = _generate_urdu_tc_image()
-        p.set(align="center")
-        # Center the image manually by passing center=True if supported, or relying on set(align="center")
-        p.image(tc_img_path)
-        
-        # Clean up temp image
-        try:
-            os.remove(tc_img_path)
-        except OSError:
-            pass
-        
+        printer.set(align='center')
+        printer.text("Thank You\n\n")
+
         # 6. Barcode
-        p.text("\n")
-        transaction_id = data.get("transaction_id", "")
-        if transaction_id:
-            barcode_str = "{B" + transaction_id
-            p.barcode(barcode_str, "CODE128", width=3, height=64, pos="BELOW", font="a")
+        printer.text("\n")
+        
+        # We ensure it complies with python-escpos syntax
+        try:
+            # python-escpos typically expects the subset to be defined in the string for CODE128
+            printer.barcode("{B" + str(customer_id), 'CODE128', width=3, height=64, pos="BELOW")
+        except Exception as e:
+            logger.warning(f"Barcode warning: {e}. Trying fallback.")
+            printer.barcode(str(customer_id), 'CODE128', width=3, height=64, pos="BELOW")
             
-        p.text("\n\n\n\n")
-        p.cut()
-        p.close()
+        printer.text("\n\n\n")
+        printer.cut()
+        printer.close()
+        
         return True
         
     except EscposError as e:
