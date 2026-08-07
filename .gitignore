@@ -1,5 +1,5 @@
 # Ignore local SQLite database files and temporary locks
-*.db
+inventory.db
 *.db-shm
 *.db-wal
 
