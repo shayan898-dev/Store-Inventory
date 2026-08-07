@@ -20,6 +20,7 @@ import sys
 import threading
 from datetime import datetime
 from typing import Optional
+import bcrypt
 
 
 # ---------------------------------------------------------------------------
@@ -173,20 +174,106 @@ class DatabaseManager:
                 );
             """)
 
-            # ---- Users table ----
+            # ---- Security & Users ----
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS roles (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT UNIQUE NOT NULL,
+                    description TEXT
+                );
+            """)
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS permissions (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT UNIQUE NOT NULL,
+                    description TEXT
+                );
+            """)
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS role_permissions (
+                    role_id INTEGER,
+                    permission_id INTEGER,
+                    PRIMARY KEY (role_id, permission_id),
+                    FOREIGN KEY (role_id) REFERENCES roles(id),
+                    FOREIGN KEY (permission_id) REFERENCES permissions(id)
+                );
+            """)
+            
+            # The new users table (migration handled below)
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS users (
-                    username TEXT PRIMARY KEY,
-                    password TEXT NOT NULL,
-                    role     TEXT NOT NULL CHECK(role IN ('admin', 'staff'))
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    username TEXT UNIQUE NOT NULL,
+                    password_hash TEXT NOT NULL,
+                    role_id INTEGER,
+                    status TEXT DEFAULT 'Active',
+                    FOREIGN KEY (role_id) REFERENCES roles(id)
+                );
+            """)
+            
+            # Configuration
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS settings (
+                    key TEXT PRIMARY KEY,
+                    value TEXT,
+                    category TEXT NOT NULL
+                );
+            """)
+            
+            # Audit Tracking
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS audit_logs (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    username TEXT NOT NULL,
+                    action TEXT NOT NULL,
+                    details TEXT,
+                    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
                 );
             """)
 
+            # Seed default roles if empty
+            cur = conn.execute("SELECT COUNT(*) FROM roles;")
+            if cur.fetchone()[0] == 0:
+                conn.execute("INSERT INTO roles (name, description) VALUES ('admin', 'System Administrator');")
+                conn.execute("INSERT INTO roles (name, description) VALUES ('staff', 'Standard Staff Member');")
+                conn.execute("INSERT INTO roles (name, description) VALUES ('manager', 'Store Manager');")
+                conn.execute("INSERT INTO roles (name, description) VALUES ('cashier', 'Checkout Operator');")
+                
+                permissions = [
+                    ("access_settings", "Access the Settings Dashboard"),
+                    ("add_product", "Add new products"),
+                    ("edit_product", "Edit existing products"),
+                    ("delete_product", "Delete products"),
+                    ("view_inventory", "View the inventory list"),
+                    ("process_sale", "Process sales and print receipts"),
+                    ("apply_discount", "Apply discounts to bills"),
+                    ("process_refund", "Process refunds"),
+                    ("process_restock", "Add stock to products"),
+                    ("view_reports", "View financial and sales reports"),
+                    ("view_transactions", "View past transactions"),
+                    ("manage_staff", "Add, edit, or delete staff members and users")
+                ]
+                for p_name, p_desc in permissions:
+                    conn.execute("INSERT INTO permissions (name, description) VALUES (?, ?);", (p_name, p_desc))
+                    
+                # Grant admin all permissions
+                conn.execute("""
+                    INSERT INTO role_permissions (role_id, permission_id) 
+                    SELECT (SELECT id FROM roles WHERE name='admin'), id FROM permissions;
+                """)
+                # Grant staff basic permissions
+                staff_perms = ['view_inventory', 'process_sale']
+                for sp in staff_perms:
+                    conn.execute("""
+                        INSERT INTO role_permissions (role_id, permission_id) 
+                        VALUES ((SELECT id FROM roles WHERE name='staff'), (SELECT id FROM permissions WHERE name=?));
+                    """, (sp,))
+                    
             # Seed default users if empty
             cur = conn.execute("SELECT COUNT(*) FROM users;")
             if cur.fetchone()[0] == 0:
-                conn.execute("INSERT INTO users (username, password, role) VALUES ('admin', 'admin', 'admin');")
-                conn.execute("INSERT INTO users (username, password, role) VALUES ('staff', 'staff', 'staff');")
+                # We check if there's a legacy users table to migrate first in _migrate
+                pass
 
             conn.commit()
 
@@ -224,6 +311,49 @@ class DatabaseManager:
             conn.execute("ALTER TABLE staff ADD COLUMN salary REAL DEFAULT 0.0;")
             print("[DB] Migrated: added 'salary' column to staff")
 
+        # Migrate Users to RBAC
+        user_cols = {row[1] for row in conn.execute("PRAGMA table_info(users);")}
+        if "password" in user_cols and "password_hash" not in user_cols:
+            print("[DB] Migrating legacy users to RBAC...")
+            # We must recreate the table
+            conn.execute("ALTER TABLE users RENAME TO users_legacy;")
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS users (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    username TEXT UNIQUE NOT NULL,
+                    password_hash TEXT NOT NULL,
+                    role_id INTEGER,
+                    status TEXT DEFAULT 'Active',
+                    FOREIGN KEY (role_id) REFERENCES roles(id)
+                );
+            """)
+            legacy_users = conn.execute("SELECT username, password, role FROM users_legacy").fetchall()
+            for u in legacy_users:
+                uname = u[0]
+                upass = u[1]
+                urole = u[2]
+                
+                # hash password
+                phash = bcrypt.hashpw(upass.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+                
+                # get role id
+                r_id = conn.execute("SELECT id FROM roles WHERE name=?", (urole.lower(),)).fetchone()
+                role_id = r_id[0] if r_id else 2 # default to staff
+                
+                conn.execute("INSERT INTO users (username, password_hash, role_id) VALUES (?, ?, ?);", (uname, phash, role_id))
+                
+            conn.execute("DROP TABLE users_legacy;")
+            print("[DB] Successfully migrated users.")
+            
+        # Seed default users if empty (whether new or migrated with 0 rows)
+        cur = conn.execute("SELECT COUNT(*) FROM users;")
+        if cur.fetchone()[0] == 0:
+            admin_hash = bcrypt.hashpw(b'admin', bcrypt.gensalt()).decode('utf-8')
+            staff_hash = bcrypt.hashpw(b'staff', bcrypt.gensalt()).decode('utf-8')
+            conn.execute("INSERT INTO users (username, password_hash, role_id) VALUES ('admin', ?, (SELECT id FROM roles WHERE name='admin'));", (admin_hash,))
+            conn.execute("INSERT INTO users (username, password_hash, role_id) VALUES ('staff', ?, (SELECT id FROM roles WHERE name='staff'));", (staff_hash,))
+            print("[DB] Seeded default users.")
+                
         conn.commit()
 
     # ------------------------------------------------------------------
@@ -785,28 +915,66 @@ class DatabaseManager:
     # ------------------------------------------------------------------
 
     def authenticate_user(self, username: str, password: str) -> Optional[str]:
-        """Verifies credentials. Returns the user's role ('admin' or 'staff') if valid, else None."""
-        sql = "SELECT role FROM users WHERE username = ? AND password = ?;"
+        """Verifies credentials. Returns the user's role ('admin' or 'staff' etc) if valid, else None."""
+        sql = "SELECT password_hash, role_id FROM users WHERE username = ? AND status = 'Active';"
         with self._connect() as conn:
-            row = conn.execute(sql, (username.strip().lower(), password.strip())).fetchone()
-            return row["role"] if row else None
+            row = conn.execute(sql, (username.strip().lower(),)).fetchone()
+            if row:
+                phash = row["password_hash"]
+                if bcrypt.checkpw(password.encode('utf-8'), phash.encode('utf-8')):
+                    r_id = row["role_id"]
+                    r_name = conn.execute("SELECT name FROM roles WHERE id=?", (r_id,)).fetchone()
+                    return r_name["name"] if r_name else None
+            return None
 
     def get_all_users(self) -> list[dict]:
         """Returns all login accounts sorted alphabetically."""
-        sql = "SELECT username, role FROM users ORDER BY username ASC;"
+        sql = '''
+            SELECT u.username, r.name as role 
+            FROM users u
+            JOIN roles r ON u.role_id = r.id
+            ORDER BY u.username ASC;
+        '''
         with self._connect() as conn:
             return [dict(r) for r in conn.execute(sql).fetchall()]
 
     def add_user(self, username: str, password: str, role: str) -> bool:
         """Adds a new user account."""
-        sql = "INSERT INTO users (username, password, role) VALUES (?, ?, ?);"
         try:
+            phash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
             with self._connect() as conn:
-                conn.execute(sql, (username.strip().lower(), password.strip(), role.strip().lower()))
+                r_id = conn.execute("SELECT id FROM roles WHERE name=?", (role.strip().lower(),)).fetchone()
+                if not r_id:
+                    return False
+                role_id = r_id["id"]
+                conn.execute("INSERT INTO users (username, password_hash, role_id) VALUES (?, ?, ?);", 
+                             (username.strip().lower(), phash, role_id))
                 conn.commit()
             return True
         except Exception as e:
             print(f"[DB] Error adding user: {e}")
+            return False
+
+    def update_user(self, username: str, new_password: str | None, new_role: str) -> bool:
+        """Updates an existing user account's role and optionally password."""
+        try:
+            with self._connect() as conn:
+                r_id = conn.execute("SELECT id FROM roles WHERE name=?", (new_role.strip().lower(),)).fetchone()
+                if not r_id:
+                    return False
+                role_id = r_id["id"]
+                
+                if new_password:
+                    phash = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+                    conn.execute("UPDATE users SET password_hash = ?, role_id = ? WHERE username = ?;",
+                                 (phash, role_id, username.strip().lower()))
+                else:
+                    conn.execute("UPDATE users SET role_id = ? WHERE username = ?;",
+                                 (role_id, username.strip().lower()))
+                conn.commit()
+            return True
+        except Exception as e:
+            print(f"[DB] Error updating user: {e}")
             return False
 
     def delete_user(self, username: str) -> bool:
@@ -834,3 +1002,30 @@ class DatabaseManager:
             self.log_restock(product["barcode"], product["name"], qty_returned, product["quantity"])
             return True, product
         return False, None
+
+    # ------------------------------------------------------------------
+    # Settings (Key-Value Configuration)
+    # ------------------------------------------------------------------
+
+    def get_setting(self, key: str, default: str = "") -> str:
+        """Retrieves a configuration value."""
+        sql = "SELECT value FROM settings WHERE key = ?;"
+        with self._connect() as conn:
+            row = conn.execute(sql, (key,)).fetchone()
+            return row["value"] if row else default
+
+    def set_setting(self, key: str, value: str, category: str = "General") -> bool:
+        """Sets a configuration value."""
+        sql = '''
+            INSERT INTO settings (key, value, category) 
+            VALUES (?, ?, ?)
+            ON CONFLICT(key) DO UPDATE SET value = excluded.value, category = excluded.category;
+        '''
+        try:
+            with self._connect() as conn:
+                conn.execute(sql, (key, value, category))
+                conn.commit()
+            return True
+        except Exception as e:
+            print(f"[DB] Error setting configuration: {e}")
+            return False

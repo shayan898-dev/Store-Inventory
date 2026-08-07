@@ -23,3 +23,6 @@ numpy>=1.24.0           # Required by opencv-python
 
 # Packaging (dev only — not needed on end-user machines)
 pyinstaller>=6.0.0
+
+# Security & Password Hashing
+bcrypt>=4.0.0
