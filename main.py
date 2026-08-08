@@ -20,9 +20,31 @@ import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
 import customtkinter as ctk
 from datetime import datetime
+import json
+import requests
+import threading
 
 from database_manager import DatabaseManager
 from security import SecurityManager, ManagerOverrideDialog
+
+# ---------------------------------------------------------------------------
+# Config Loading
+# ---------------------------------------------------------------------------
+API_BASE_URL = "http://127.0.0.1:3000"
+CONFIG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config.json")
+if getattr(sys, "frozen", False):
+    CONFIG_PATH = os.path.join(os.path.dirname(sys.executable), "config.json")
+
+try:
+    if os.path.exists(CONFIG_PATH):
+        with open(CONFIG_PATH, "r") as f:
+            config = json.load(f)
+            API_BASE_URL = config.get("API_BASE_URL", API_BASE_URL)
+    else:
+        with open(CONFIG_PATH, "w") as f:
+            json.dump({"API_BASE_URL": API_BASE_URL}, f, indent=4)
+except Exception as e:
+    print(f"Error loading config: {e}")
 
 
 # ---------------------------------------------------------------------------
@@ -964,6 +986,7 @@ class InventoryApp(ctk.CTk):
             nav_items.append(("transactions", "📋", "Transactions"))
             nav_items.append(("reports", "📈", "Reports"))
         if self.security.has_permission(self.username, "system_admin"):
+            nav_items.append(("pending_bills", "⏳", "Pending Bills"))
             nav_items.append(("staff", "👥", "Staff"))
         nav_items.append(("settings", "⚙", "Settings"))
 
@@ -1046,6 +1069,8 @@ class InventoryApp(ctk.CTk):
             self._staff_refresh()
         elif name == "transactions":
             self._transactions_refresh()
+        elif name == "pending_bills":
+            self._pending_bills_refresh()
         elif name == "settings":
             self._settings_refresh()
 
@@ -2964,8 +2989,136 @@ class InventoryApp(ctk.CTk):
     # ==================================================================
     #  SETTINGS VIEW
     # ==================================================================
+    # Pending Bills View
+    # ==================================================================
+    
+    def _build_pending_bills_view(self):
+        view = ctk.CTkFrame(self.content, fg_color="transparent")
+        
+        # Header
+        header = ctk.CTkFrame(view, fg_color="transparent")
+        header.pack(fill="x", padx=24, pady=(24, 16))
+        ctk.CTkLabel(header, text="Pending Bills", font=(FONT, 20, "bold"), text_color=C_TEXT).pack(side="left")
+        
+        self._server_status_lbl = ctk.CTkLabel(header, text="Server: Checking...", font=(FONT, 12), text_color=C_TEXT_DIM)
+        self._server_status_lbl.pack(side="right")
+        
+        # Table
+        table_frame = ctk.CTkFrame(view, fg_color=C_CARD, corner_radius=12)
+        table_frame.pack(fill="both", expand=True, padx=24, pady=0)
+        
+        cols = ("ID", "Staff", "Amount", "Time")
+        self._pending_tree = ttk.Treeview(table_frame, columns=cols, show="headings", height=15)
+        self._pending_tree.heading("ID", text="Bill ID")
+        self._pending_tree.heading("Staff", text="Staff Member")
+        self._pending_tree.heading("Amount", text="Total Amount")
+        self._pending_tree.heading("Time", text="Time")
+        
+        self._pending_tree.column("ID", width=100)
+        self._pending_tree.column("Staff", width=150)
+        self._pending_tree.column("Amount", width=100)
+        self._pending_tree.column("Time", width=150)
+        
+        self._pending_tree.pack(side="left", fill="both", expand=True, padx=16, pady=16)
+        
+        sb = ttk.Scrollbar(table_frame, orient="vertical", command=self._pending_tree.yview)
+        self._pending_tree.configure(yscrollcommand=sb.set)
+        sb.pack(side="right", fill="y", pady=16)
+        
+        # Actions
+        action_frame = ctk.CTkFrame(view, fg_color="transparent")
+        action_frame.pack(fill="x", padx=24, pady=24)
+        
+        btn_confirm = ctk.CTkButton(action_frame, text="Confirm & Print", fg_color=C_SUCCESS, hover_color="#187236", font=(FONT, 14, "bold"), height=40, command=self._confirm_pending_bill)
+        btn_confirm.pack(side="right")
+        
+        self._pending_bills_data = {}
+        self._is_polling_bills = False
+        
+        return view
+        
+    def _pending_bills_refresh(self):
+        if not self._is_polling_bills:
+            self._is_polling_bills = True
+            threading.Thread(target=self._poll_pending_bills_loop, daemon=True).start()
+            
+    def _poll_pending_bills_loop(self):
+        while self._active_view == "pending_bills":
+            try:
+                resp = requests.get(f"{API_BASE_URL}/api/bills/pending", timeout=5)
+                resp.raise_for_status()
+                bills = resp.json()
+                self.after(0, lambda: self._server_status_lbl.configure(text="Server: Online", text_color=C_SUCCESS))
+                self.after(0, self._update_pending_bills_ui, bills)
+            except requests.exceptions.RequestException as e:
+                self.after(0, lambda: self._server_status_lbl.configure(text="Server: Offline", text_color=C_DANGER))
+                print(f"Error polling bills: {e}")
+            time.sleep(3)
+        self._is_polling_bills = False
+        
+    def _update_pending_bills_ui(self, bills):
+        # Update table
+        for item in self._pending_tree.get_children():
+            self._pending_tree.delete(item)
+            
+        self._pending_bills_data.clear()
+        for b in bills:
+            self._pending_bills_data[b['bill_id']] = b
+            dt = str(b['created_at']).replace('T', ' ')[:16]
+            self._pending_tree.insert("", "end", values=(
+                b['bill_id'][:8],
+                b['staff_username'],
+                f"R {float(b['total_amount']):.2f}",
+                dt
+            ), tags=(b['bill_id'],))
+            
+    def _confirm_pending_bill(self):
+        sel = self._pending_tree.selection()
+        if not sel:
+            messagebox.showwarning("No Selection", "Please select a pending bill to confirm.")
+            return
+            
+        item_id = self._pending_tree.item(sel[0], "tags")[0]
+        bill_data = self._pending_bills_data.get(item_id)
+        if not bill_data:
+            return
+            
+        def _do_confirm():
+            try:
+                payload = {"bill_id": bill_data['bill_id']}
+                resp = requests.post(f"{API_BASE_URL}/api/bills/confirm", json=payload, timeout=5)
+                if resp.status_code == 200:
+                    self.after(0, lambda: self._toast("Transaction Confirmed!"))
+                    self.after(0, self._pending_tree.delete, sel[0])
+                    
+                    # Call Printer Module
+                    try:
+                        from printer_module import print_transaction_receipt
+                        cart_items = bill_data['cart_items']
+                        if isinstance(cart_items, str):
+                            cart_items = json.loads(cart_items)
+                            
+                        receipt_data = {
+                            "transaction_id": resp.json().get("transaction_id", item_id),
+                            "staff": bill_data['staff_username'],
+                            "total": bill_data['total_amount'],
+                            "discount": bill_data['discount_applied'],
+                            "items": cart_items,
+                            "time": bill_data['created_at']
+                        }
+                        print_transaction_receipt(receipt_data)
+                    except Exception as e:
+                        print(f"Printer error: {e}")
+                        
+                else:
+                    err = resp.json().get("error", "Unknown error")
+                    self.after(0, lambda: messagebox.showerror("Confirmation Failed", err))
+            except requests.exceptions.RequestException as e:
+                self.after(0, lambda: messagebox.showerror("Network Error", f"Could not reach server: {e}"))
+                
+        threading.Thread(target=_do_confirm, daemon=True).start()
 
-    def _build_settings_view(self):
+    # ==================================================================
         view = ctk.CTkFrame(self.content, fg_color="transparent")
         
         # Header

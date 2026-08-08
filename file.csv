@@ -1,0 +1,463 @@
+reg_no,Company Name,Brand Name,Formulation,Pack Size,MRP
+55113,AGP Limited,ABNIL Capsule 120MG,Orlistat,30's,"Rs. 1,644.15"
+55113,AGP Limited,ABNIL Capsule 120MG,Orlistat,20's,"Rs. 1,131.22"
+42718,Jinnah Pharmaceuticals (Pvt.) Ltd.,Diabnil 1mg Tablet,Glimepiride ...1mg,2x10's,Rs. 141.11
+42719,Jinnah Pharmaceuticals (Pvt.) Ltd.,Diabnil 2mg Tablet,Glimepiride …2mg,2x10's,Rs. 258.78
+42720,Jinnah Pharmaceuticals (Pvt.) Ltd.,Diabnil 3mg Tablet,Glimepiride …3mg,2x10's,Rs. 423.32
+42721,Jinnah Pharmaceuticals (Pvt.) Ltd.,Diabnil 4mg Tablet,Glimepiride …4mg,2x10's,Rs. 564.43
+70732,Getz Pharma (Pvt.) Limited,Amclav Drops 62.5mg/ml,Each reconstituted mL contains: Amoxicillin…50mg (as amoxicillin trihydrate) Clavulanic acid…12.5mg (as clavulanate potassium),20 ml,Rs. 156.90
+70732,Getz Pharma (Pvt.) Limited,Amclav Drops 62.5mg/ml,Each reconstituted mL contains: Amoxicillin…50mg (as amoxicillin trihydrate) Clavulanic acid…12.5mg (as clavulanate potassium)',10 ml,Rs. 82.58
+70730,Getz Pharma (Pvt.) Limited,Amclav DS Suspension 312.50 mg/5ml,Each reconstituted 5mL contains: Amoxicillin… 250mg (as amoxicillin trihydrate) Clavulanic acid…62.5mg (as clavulanate potassium),60 ml,Rs. 150.01
+70731,Getz Pharma (Pvt.) Limited,Amclav Plus Suspension 457mg/5ml,Each reconstituted 5mL contains: Amoxicillin… 400mg (as amoxicillin trihydrate) Clavulanic acid…57mg (as clavulanate potassium),70 ml,Rs. 195.43
+70731,Getz Pharma (Pvt.) Limited,Amclav Plus Suspension 457mg/5ml,Each reconstituted 5mL contains: Amoxicillin… 400mg (as amoxicillin trihydrate) Clavulanic acid…57mg (as clavulanate potassium),35 ml,Rs. 103.22
+70731,Getz Pharma (Pvt.) Limited,Amclav Plus Suspension 457mg/5ml,Each reconstituted 5mL contains: Amoxicillin… 400mg (as amoxicillin trihydrate) Clavulanic acid…57mg (as clavulanate potassium),140 ml,Rs. 371.59
+70729,Getz Pharma (Pvt.) Limited,Amclav Suspension 156.25mg/5ml,Each reconstituted 5mL contains: Amoxicillin… 125mg (as amoxicillin trihydrate) Clavulanic acid…31.25mg (as clavulanate potassium),90ml,Rs. 144.90
+70729,Getz Pharma (Pvt.) Limited,Amclav Suspension 156.25mg/5ml,Each reconstituted 5mL contains: Amoxicillin… 125mg (as amoxicillin trihydrate) Clavulanic acid…31.25mg (as clavulanate potassium),60 ml,Rs. 96.34
+70727,Getz Pharma (Pvt.) Limited,Amclav Tablet 1gm,Each film-coated Tablet contains: Amoxicillin…875mg (as amoxicillin trihydrate) Clavulanic acid…125mg (as clavulanate potassium),6`s,Rs. 245.32
+70725,Getz Pharma (Pvt.) Limited,Amclav Tablet 375mg,Each film-coated Tablet contains: Amoxicillin…250mg (as amoxicillin trihydrate) Clavulanic acid…125mg (as clavulanate potassium),6`s,Rs. 112.85
+70726,Getz Pharma (Pvt.) Limited,Amclav Tablet 625mg,Each film-coated Tablet contains: Amoxicillin…500mg (as amoxicillin trihydrate) Clavulanic acid…125mg (as clavulanate potassium),6`s,Rs. 165.15
+20865,Mass Pharma ( Pvt.) Ltd.,Amodip Tablet 10mg,Amlodipine Besylate,2x10,Rs. 359.10
+20865,Mass Pharma ( Pvt.) Ltd.,Amodip Tablet 10mg,Amlodipine Besylate,3x10,Rs. 538.21
+21360,Mass Pharma ( Pvt.) Ltd.,Amodip Tablet 2.5mg,Amlodipine Besylate,2x10,Rs. 115.94
+20864,Mass Pharma ( Pvt.) Ltd.,Amodip Tablet 5mg,Amlodipine Besylate,2x10,Rs. 183.59
+20864,Mass Pharma ( Pvt.) Ltd.,Amodip Tablet 5mg,Amlodipine Besylate,3x10,Rs. 274.99
+60302,Mass Pharma ( Pvt.) Ltd.,Amodip Plus Tablet,Amlodipine 5mg + Hydrochlorothiazide 12.5mg,2x10,Rs. 149.22
+93539,Mass Pharma ( Pvt.) Ltd.,Amodip V-Plus Tablet,"10/160/12.5mg (Amlodipine, Valsartan, Hydrochlorothiazide",14's,Rs. 185.97
+93540,Mass Pharma ( Pvt.) Ltd.,Amodip V-Plus Tablet,"10/160/25mg (Amlodipine, Valsartan, Hydrochlorothiazide)",14's,Rs. 188.03
+94602,Mass Pharma ( Pvt.) Ltd.,Amodip-V Plus Tablet,"5/160/12.5mg (Amlodipine, Valsartan, Hydrochlorothiazide)",14's,Rs. 171.50
+76871,Mass Pharma ( Pvt.) Ltd.,Amodip-V Tablet 10/160mg,(Amlodipine 10mg + Valsartan 160mg),2x7,Rs. 522.52
+76870,Mass Pharma ( Pvt.) Ltd.,Amodip-V Tablet 5/160mg,(Amlodipine 5mg + Valsartan 160mg),2x7,Rs. 445.30
+76869,Mass Pharma ( Pvt.) Ltd.,Amodip-V Tablet 5/80mg,(Amlodipine 5mg + Valsartan 80mg),2x7,Rs. 311.46
+26130,Mass Pharma ( Pvt.) Ltd.,Amorin Tablet 50mg,Azathioprine,10x10,"Rs. 1,096.95"
+26130,Mass Pharma ( Pvt.) Ltd.,Amorin Tablet 50mg,Azathioprine,1x10,Rs. 120.49
+76744,Pfizer Pakistan Limited,Ansaid SR Capsule,Flurbiprofen …...200mg,30's,Rs. 429.54
+43093,Sanofi-aventis Pakistan limited,Aprovel Tablet 150mg,Irbesartan….150mg,28's (2x14),"Rs. 1,741.91"
+43094,Sanofi-aventis Pakistan limited,Aprovel Tablet 300mg,Irbesartan …300mg,28's (2x14),"Rs. 3,110.54"
+43095,Sanofi-aventis Pakistan limited,Co-Aprovel Tablet 150/12.5mg,Irbesartan 150mg + Hydrochlorothiazide 12.5mg,28's (2x14),"Rs. 1,718.17"
+43096,Sanofi-aventis Pakistan limited,Co-Aprovel Tablet 300/12.5mg,Irbesartan 300mg + Hydrochlorothiazide 12.5mg,28's (2x14),"Rs. 3,109.07"
+53883,Sanofi-aventis Pakistan limited,Co-Aprovel Tablet 300/25mg,Irbesartan 300mg + Hydrochlorothiazide 25mg,28's (2x14),"Rs. 3,109.07"
+22352,Abbott Laboratories (Pakistan) Limited,ARINAC FORTE Tablet,"Each Tablet contains: Ibuprofen…..400mg, Pseudoephedrine HCI……………..…60mg",10 X 10's,Rs. 740.00
+18387,Abbott Laboratories (Pakistan) Limited,ARINAC Tablet,"Each Tablet contains: Ibuprofen...200mg, Pseudoephedrine HCI…30mg",10X10's,Rs. 357.28
+22353,Abbott Laboratories (Pakistan) Limited,ARINAC Suspension,"Each 5ml contains: Ibuprofen B.P. 100mg, Pseudoephedrine HCl B.P 15mg",90ML,Rs. 58.96
+22353,Abbott Laboratories (Pakistan) Limited,ARINAC Suspension,"Each 5ml contains: Ibuprofen B.P. 100mg, Pseudoephedrine HCl B.P 15mg",120ML,Rs. 82.00
+59406,"Genome Pharmaceuticals (Pvt.) Ltd,",Varinac Forte Tablet,Ibuprofen…………...…………………400mg Pseudoephedrine Hcl…………………60mg,10 x 10's,Rs. 332.27
+9276,Abbott Laboratories (Pakistan) Limited,ARTIFEN 50MG Tablet,Each enteric-coated Tablet contains: Diclofenac Sodium….50mg,10X10's,Rs. 536.13
+17278,Abbott Laboratories (Pakistan) Limited,ARTIFEN Injection,Each 3ml contains: Diclofenac sodium…..75 mg,5 X 3ml,Rs. 192.76
+53363,ATCO Laboratories Ltd.,ASCARD PLUS Tablet,Aspirin 81mg + Clopidogrel 75mg,10's,Rs. 184.75
+22322,ATCO Laboratories Ltd.,ASCARD 150 Tablet,Aspirin Crystalline Powder 150mg,30's,Rs. 69.24
+16601,ATCO Laboratories Ltd.,ASCARD 300 Tablet,Acetylsalicylic Acid 300mg,30's,Rs. 78.49
+16600,ATCO Laboratories Ltd.,ASCARD 75 Tablet,Acetylsalicylic Acid 75mg,30's,Rs. 57.70
+85782,Wimits Pharmaceuticals Pvt. Ltd,Wascorel -S 75mg/75 Tablet (Clopidogrel + Aspirin),Each film coated Tablet contains: Clopidogrel (as bisulfate)………………....75mg Aspirin……………………………………75mg,10's,Rs. 196.74
+6387,Wilshire Laboratories (Pvt) Ltd.,ASPIRIN Tablet,Aspirin 300mg,1000's,Rs. 28.22
+15027,GlaxoSmithKline Pakistan Ltd.,Atarax Syrup 10mg,Hydroxyzine Dihydrochloride 10mg,110ml,Rs. 32.17
+7591,GlaxoSmithKline Pakistan Ltd.,Atarax Tablet 10mg,Hydroxyzine Dihydrochloride 10mg,50's,Rs. 47.03
+83965,GlaxoSmithKline Pakistan Ltd.,Atarax Tablet 25mg,Hydroxyzine Dihydrochloride 25mg,50's,Rs. 94.06
+11523,GlaxoSmithKline Pakistan Ltd.,Augmentin IV 1.2g,Amoxycillin 1g; Clavulanic Acid 200mg,1's vial,Rs. 249.63
+10338,GlaxoSmithKline Pakistan Ltd.,Augmentin IV 600mg,Amoxycillin 500mg; Clavulanic Acid 100mg,per vial,Rs. 140.51
+9264,GlaxoSmithKline Pakistan Ltd.,Augmentin Syrup 156.25mg,Amoxycillin 125mg; Clavulanic Acid 31.25mg/5ml,75ml,Rs. 130.50
+9264,GlaxoSmithKline Pakistan Ltd.,Augmentin Syrup 156.25mg,Amoxycillin 125mg; Clavulanic Acid 31.25mg/5ml,90ml,Rs. 169.06
+9264,GlaxoSmithKline Pakistan Ltd.,Augmentin Syrup 156.25mg,Amoxycillin 125mg; Clavulanic Acid 31.25mg/5ml,60ml,Rs. 131.20
+18360,GlaxoSmithKline Pakistan Ltd.,Augmentin Syrup 312.5mg,Amoxycillin 250mg; Clavulanic Acid 62.50mg/5ml,75ml,Rs. 201.37
+18360,GlaxoSmithKline Pakistan Ltd.,Augmentin Syrup 312.5mg,Amoxycillin 250mg; Clavulanic Acid 62.50mg/5ml,90ml,Rs. 274.99
+18360,GlaxoSmithKline Pakistan Ltd.,Augmentin Syrup 312.5mg,Amoxycillin 250mg; Clavulanic Acid 62.50mg/5ml,60ml,Rs. 208.24
+17297,GlaxoSmithKline Pakistan Ltd.,Augmentin Tablet 625mg,Amoxycillin 500mg; Clavulanic Acid 125mg,15's,Rs. 452.24
+17297,GlaxoSmithKline Pakistan Ltd.,Augmentin Tablet 625mg,Amoxycillin 500mg; Clavulanic Acid 125mg,10's,Rs. 307.12
+17297,GlaxoSmithKline Pakistan Ltd.,Augmentin Tablet 625mg,Amoxycillin 500mg; Clavulanic Acid 125mg,6's,Rs. 201.10
+52208,GlaxoSmithKline Pakistan Ltd.,Augmentin Drops,Amoxycillin 50mg; Clavulanic Acid 12.5mg,20ml,
+70662,GlaxoSmithKline Pakistan Ltd.,Augmentin Syrup 457mg/5ml,"Amoxycillin 400mg, Clavulanic Acid 57mg",35ml,
+70662,GlaxoSmithKline Pakistan Ltd.,Augmentin Syrup 457mg/5ml,"Amoxycillin 400mg, Clavulanic Acid 57mg",70ml,
+22244,GlaxoSmithKline Pakistan Ltd.,Augmentin Tablet 1g,Amoxycillin 875mg; Clavulanic Acid 125mg,6's,
+22244,GlaxoSmithKline Pakistan Ltd.,Augmentin Tablet 1g,Amoxycillin 875mg; Clavulanic Acid 125mg,10's,
+6747,GlaxoSmithKline Pakistan Ltd.,Augmentin Tablet 375mg,Amoxycillin 250mg; Clavulanic Acid 125mg,15's,
+6747,GlaxoSmithKline Pakistan Ltd.,Augmentin Tablet 375mg,Amoxycillin 250mg; Clavulanic Acid 125mg,6's,
+48597,Genix Pharma (Private) Limited,Ribavil Tablet 400mg,Ribavirin….400mg,10's,Rs. 123.86
+48598,Genix Pharma (Private) Limited,Ribavil Tablet 600mg,Ribavirin…600mg,10's,Rs. 165.15
+224,Sanofi-aventis Pakistan limited,Avil Tablet,Pheneramine maleate ….25mg,5x50's,Rs. 218.33
+225,Sanofi-aventis Pakistan limited,Avil Tablet,Pheniramine maleate ...50mg,2x50,Rs. 89.56
+226,Sanofi-aventis Pakistan limited,Avil Injection,Pheniramine maleate,50's,Rs. 301.16
+5323,Sanofi-aventis Pakistan limited,Avil Syrup,Pheniramine maleate...15mg/5ml,60ml Bottle,Rs. 41.67
+5323,Sanofi-aventis Pakistan limited,Avil Syrup,Pheniramine maleate...15mg/5ml,90ml Bottle,Rs. 62.70
+227,Sanofi-aventis Pakistan limited,Avil Retard Tablet,Pheneramine maleate ….75mg,100's,Rs. 255.56
+85166,Genetics Pharmaceuticals (Pvt.) Ltd.,Navilox 400mg Tab,Each Tablet contains: Moxifloxacin (as Hydrochloride)= 400 mg,5's,Rs. 631.36
+11399,S.J & G Fazul Ellahie (Pvt) Limited,Rexavil Injection,Pheniramine Maleate ... 22.7 mg,50 x 1 ml,Rs. 161.50
+11399,S.J & G Fazul Ellahie (Pvt) Limited,Rexavil Injection,Pheniramine Maleate ... 22.7 mg,100 x 2 ml,Rs. 318.74
+77122,McOlson Research Laboratories (Pvt.) Ltd.,Glitavil Plus Tablets,Each Film Coated Tablet Contains Vildagliptin: 50 mg Metformin Hydrochloride: 850 mg,28's,"Rs. 2,042.61"
+77195,McOlson Research Laboratories (Pvt.) Ltd.,Glitavil Tablets,Each Film Coated Tablet Contains Vildagliptin: 50 mg,10's,Rs. 439.00
+22201,Novartis Pharma (Pakistan) Limited,Azomax 200 mg Susp,Azithromycin,15 ml,Rs. 311.25
+22201,Novartis Pharma (Pakistan) Limited,Azomax 200 mg Susp,Azithromycin,25 ml,Rs. 478.86
+22200,Novartis Pharma (Pakistan) Limited,Azomax 250 mg Cap,Azithromycin,10's,Rs. 462.89
+22200,Novartis Pharma (Pakistan) Limited,Azomax 250 mg Cap,Azithromycin,12's,Rs. 555.47
+45415,Novartis Pharma (Pakistan) Limited,Azomax 500 mg Tab,Azithromycin,6's,Rs. 383.70
+91139,GlaxoSmithKline Pakistan Ltd.,Betnesol Drops,Betamethasone sodium phosphate 0.1% w/v,7.5ml,Rs. 48.27
+249,GlaxoSmithKline Pakistan Ltd.,Betnesol eye Ointment,Betamethasone sodium phosphate 0.1% w/w,5g,Rs. 29.20
+91140,GlaxoSmithKline Pakistan Ltd.,Betnesol N Drops,"Betamethasone sodium phosphate 0.1% w/v, Neomycin sulphate 0.5% w/v",7.5ml,Rs. 48.27
+251,GlaxoSmithKline Pakistan Ltd.,Betnesol N eye Ointment,"Betamethasone sodium phosphate 0.1% w/v, Neomycin Sulphate 0.5% w/v",5g,Rs. 27.95
+262,GlaxoSmithKline Pakistan Ltd.,Betnesol Tablet,Betamethasone sodium phosphate 0.5mg,20's,Rs. 37.35
+262,GlaxoSmithKline Pakistan Ltd.,Betnesol Tablet,Betamethasone sodium phosphate 0.5mg,100's,Rs. 179.24
+89269,GlaxoSmithKline Pakistan Ltd.,Betnesol Injection,Betamethasone sodium phosphate 4mg/ml,5's,Rs. 93.40
+256,GlaxoSmithKline Pakistan Ltd.,Betnovate Cream,Betamethasone Valerate 0.1% w/w,5g,Rs. 21.54
+256,GlaxoSmithKline Pakistan Ltd.,Betnovate Cream,Betamethasone Valerate 0.1% w/w,10g,Rs. 41.86
+256,GlaxoSmithKline Pakistan Ltd.,Betnovate Cream,Betamethasone Valerate 0.1% w/w,30g,Rs. 104.86
+257,GlaxoSmithKline Pakistan Ltd.,Betnovate Ointment,Betamethasone Valerate 0.1% w/w,5g,Rs. 21.54
+257,GlaxoSmithKline Pakistan Ltd.,Betnovate Ointment,Betamethasone Valerate 0.1% w/w,10g,Rs. 41.86
+257,GlaxoSmithKline Pakistan Ltd.,Betnovate Ointment,Betamethasone Valerate 0.1% w/w,30g,Rs. 104.86
+252,GlaxoSmithKline Pakistan Ltd.,Betnovate N lotion,"Betamethasone Valerate 0.1% w/v, Neomycin Sulphate 0.5% w/v",20ml,Rs. 69.25
+252,GlaxoSmithKline Pakistan Ltd.,Betnovate N lotion,"Betamethasone Valerate 0.1% w/v, Neomycin Sulphate 0.5% w/v",60ml,Rs. 198.17
+255,GlaxoSmithKline Pakistan Ltd.,Betnovate N Ointment,"Betamethasone Valerare 0.1% w/w, Neomycin Sulphate 0.5% w/w",10g,Rs. 46.52
+255,GlaxoSmithKline Pakistan Ltd.,Betnovate N Ointment,"Betamethasone Valerare 0.1% w/w, Neomycin Sulphate 0.5% w/w",30g,Rs. 118.80
+253,GlaxoSmithKline Pakistan Ltd.,Betnovate lotion,Betamethasone valerate 0.1% w/v,20ml,Rs. 75.63
+253,GlaxoSmithKline Pakistan Ltd.,Betnovate lotion,Betamethasone valerate 0.1% w/v,60ml,Rs. 216.18
+254,GlaxoSmithKline Pakistan Ltd.,Betnovate N Cream,"Betamethasone Valerate 0.1% w/w, Neomycin Sulphate 0.5% w/w",10g,Rs. 46.52
+254,GlaxoSmithKline Pakistan Ltd.,Betnovate N Cream,"Betamethasone Valerate 0.1% w/w, Neomycin Sulphate 0.5% w/w",15g,Rs. 62.36
+254,GlaxoSmithKline Pakistan Ltd.,Betnovate N Cream,"Betamethasone Valerate 0.1% w/w, Neomycin Sulphate 0.5% w/w",30g,Rs. 118.80
+254,GlaxoSmithKline Pakistan Ltd.,Betnovate N Cream,"Betamethasone Valerate 0.1% w/w, Neomycin Sulphate 0.5% w/w",20g,Rs. 79.19
+256,GlaxoSmithKline Pakistan Ltd.,Betnovate Cream,Betamethasone Valerate 0.1% w/w,20g,Rs. 72.03
+257,GlaxoSmithKline Pakistan Ltd.,Betnovate Ointment,Betamethasone Valerate 0.1% w/w,20g,Rs. 72.03
+255,GlaxoSmithKline Pakistan Ltd.,Betnovate N Ointment,"Betamethasone Valerare 0.1% w/w, Neomycin Sulphate 0.5% w/w",15g,Rs. 48.10
+255,GlaxoSmithKline Pakistan Ltd.,Betnovate N Ointment,"Betamethasone Valerare 0.1% w/w, Neomycin Sulphate 0.5% w/w",20g,Rs. 79.19
+44255,Barrett Hodgson Pakistan (Pvt) Ltd.,Britanyl Syrup,Each ml contains: Terbutaline Sulphate….0.3mg,60 ml,Rs. 48.38
+44256,Barrett Hodgson Pakistan (Pvt) Ltd.,Britanyl Injection,Each 1ml contains: Terbutaline Sulphate…...0.5mg,5’s amp,Rs. 87.63
+44254,Barrett Hodgson Pakistan (Pvt) Ltd.,Britanyl 2.5mg Tablet,Each Tablet contains: Terbutaline Sulphate….. 2.5mg,100’s,Rs. 207.71
+7850,Abbott Laboratories (Pakistan) Limited,BRUFEN Tablet 600MG,Each Tablet contains: Ibuprofen 600mg.,3X12's,Rs. 170.03
+18388,Abbott Laboratories (Pakistan) Limited,BRUFEN RETARD Tablet 800MG,Each Tablet contains: Ibuprofen 800mg.,2 X 12's,Rs. 169.35
+12447,Abbott Laboratories (Pakistan) Limited,BRUFEN Cream,Each 100gm contains: Ibuprofen 10gm.,30GM,Rs. 78.48
+70851,Abbott Laboratories (Pakistan) Limited,BRUFEN DS Suspension,Each 5ml contains: Ibuprofen 200mg in an orange flavored Syrup base.,120ML,Rs. 90.00
+70851,Abbott Laboratories (Pakistan) Limited,BRUFEN DS Suspension,Each 5ml contains: Ibuprofen 200mg in an orange flavored Syrup base.,90ML,Rs. 82.57
+70851,Abbott Laboratories (Pakistan) Limited,BRUFEN DS Suspension,Each 5ml contains: Ibuprofen 200mg in an orange flavored Syrup base.,60ML,Rs. 47.87
+44415,Abbott Laboratories (Pakistan) Limited,BRUFEN PLUS Tablet,"Each film coated Tablet contains: Ibuprofen 200mg, Codeine phosphate 20mg.",2X10's,Rs. 141.69
+72,Abbott Laboratories (Pakistan) Limited,BRUFEN Tablet 200MG,Each Tablet contains: Ibuprofen 200mg.,10X10S,Rs. 276.00
+1541,Abbott Laboratories (Pakistan) Limited,BRUFEN Tablet 400MG,Each Tablet contains: Ibuprofen 400mg.,25X10S,Rs. 632.00
+4595,Abbott Laboratories (Pakistan) Limited,BRUFEN Suspension,Each 5ml contains: Ibuprofen 100mg in an orange flavored Syrup base.,90ML,Rs. 48.88
+4595,Abbott Laboratories (Pakistan) Limited,BRUFEN Suspension,Each 5ml contains: Ibuprofen 100mg in an orange flavored Syrup base.,120ML,Rs. 75.00
+61940,MEDIATE PHARMACEUTICALS(Pvt.) Ltd.,Medibrufen 400mg Tablet,Each tablet Contains. Ibuprofen 400 mg,25x10's,Rs. 572.72
+61941,MEDIATE PHARMACEUTICALS(Pvt.) Ltd.,Medibrufen 200mg Tablet,Each tablet Contains. Ibuprofen 200 mg,100's,Rs. 276.00
+61947,MEDIATE PHARMACEUTICALS(Pvt.) Ltd.,Medibrufen suspension,Each 5 ml Contains. Ibuprofen 100 mg,90ml,Rs. 22.15
+89120,GlaxoSmithKline Consumer Healthcare Pakistan Limited,CaC-1000 Plus Effervesent Tablet Cola Flv,"Calcium Lactate Gluconate 1000mg, Calcium carbonate 327mg, Vitamin-C 500mg, Cholecalciferol 10mg, Pyridoxine HCl 4mg",20's,Rs. 343.35
+89120,GlaxoSmithKline Consumer Healthcare Pakistan Limited,CaC-1000 Plus Effervesent Tablet Cola Flv,"Calcium Lactate Gluconate 1000mg, Calcium carbonate 327mg, Vitamin-C 500mg, Cholecalciferol 10mg, Pyridoxine HCl 4mg",10's,Rs. 180.71
+89122,GlaxoSmithKline Consumer Healthcare Pakistan Limited,CaC-1000 Plus Effervesent Tablet Lemon Flv,"Calcium Lactate Gluconate 1000mg, Calcium carbonate 327mg, Vitamin-C 500mg, Cholecalciferol 10mg, Pyridoxine HCl 4mg",20's,Rs. 343.35
+89122,GlaxoSmithKline Consumer Healthcare Pakistan Limited,CaC-1000 Plus Effervesent Tablet Lemon Flv,"Calcium Lactate Gluconate 1000mg, Calcium carbonate 327mg, Vitamin-C 500mg, Cholecalciferol 10mg, Pyridoxine HCl 4mg",10's,Rs. 180.71
+84750,GlaxoSmithKline Consumer Healthcare Pakistan Limited,CaC-1000 Plus Effervesent Tablet Mango Flv,"Calcium Lactate Gluconate 1000mg, Calcium carbonate 327mg, Vitamin-C 500mg, Cholecalciferol 10mg, Pyridoxine HCl 4mg",20's,Rs. 343.35
+84750,GlaxoSmithKline Consumer Healthcare Pakistan Limited,CaC-1000 Plus Effervesent Tablet Mango Flv,"Calcium Lactate Gluconate 1000mg, Calcium carbonate 327mg, Vitamin-C 500mg, Cholecalciferol 10mg, Pyridoxine HCl 4mg",10's,Rs. 180.71
+89121,GlaxoSmithKline Consumer Healthcare Pakistan Limited,CaC-1000 Plus Effervesent Tablet Orange Flv,"Calcium Lactate Gluconate 1000mg, Calcium carbonate 327mg, Vitamin-C 500mg, Cholecalciferol 10mg, Pyridoxine HCl 4mg",20's,Rs. 343.35
+89121,GlaxoSmithKline Consumer Healthcare Pakistan Limited,CaC-1000 Plus Effervesent Tablet Orange Flv,"Calcium Lactate Gluconate 1000mg, Calcium carbonate 327mg, Vitamin-C 500mg, Cholecalciferol 10mg, Pyridoxine HCl 4mg",10's,Rs. 180.71
+84642,GlaxoSmithKline Consumer Healthcare Pakistan Limited,CaC-1000 Effervesent Tablet,"Calcium Lactate Gluconate 1000mg, Calcium carbonate 327mg and Vitamin-C 500mg",5's,Rs. 48.88
+84642,GlaxoSmithKline Consumer Healthcare Pakistan Limited,CaC-1000 Effervesent Tablet,"Calcium Lactate Gluconate 1000mg, Calcium carbonate 327mg and Vitamin-C 500mg",10's,Rs. 82.83
+84642,GlaxoSmithKline Consumer Healthcare Pakistan Limited,CaC-1000 Effervesent Tablet,"Calcium Lactate Gluconate 1000mg, Calcium carbonate 327mg and Vitamin-C 500mg",20's,Rs. 156.15
+84642,GlaxoSmithKline Consumer Healthcare Pakistan Limited,CaC-1000 Effervesent Tablet,"Calcium Lactate Gluconate 1000mg, Calcium carbonate 327mg and Vitamin-C 500mg",30's,Rs. 228.12
+77219,Wimits Pharmaceuticals Pvt. Ltd,Cal-Dee Injection 5mg/ml (Cholecalciferol),Each 1 ml amp contains: Cholecalciferol (Vit D3)……………...5mg,1x1ml,Rs. 155.38
+55961,Amarant Pharmaceuticals Private Limited,Facal-D 0.5mcg Tablet,Each Tablet contains: Alfacalcidol ………………. 0.5mcg,10’s,Rs. 222.18
+86820,Amarant Pharmaceuticals Private Limited,Facal-D 1mcg Tablet,Each Tablet contains: Alfacalcidol ………………………… 1mcg,1x10’s,Rs. 290.43
+26977,Servier Research and Pharmaceuticals [Pakistan](Pvt.)Ltd,Diamicron MR,Gliclazide …..30mg,20's,Rs. 306.93
+59974,Servier Research and Pharmaceuticals [Pakistan](Pvt.)Ltd,Diamicron MR 60,Gliclazide …..60mg,20's,Rs. 440.86
+152,Reckitt Benckiser Pakistan Limited,DISPRIN Tablet,Acetyl Salicylic Acid BP…..300 mg,100'S,Rs. 188.91
+152,Reckitt Benckiser Pakistan Limited,DISPRIN Tablet,Acetyl Salicylic Acid BP ……..300 mg,600'S,"Rs. 1,133.85"
+14828,Reckitt Benckiser Pakistan Limited,DISPRIN CV Tablet,Aspirin BP …..100mg,30'S,Rs. 48.08
+39144,"Pharmatec Pakistan (Pvt) Ltd.,",Mecotec Injection 500mcg,Each ml contains: Mecobalamine ….500 mcg,10,Rs. 672.07
+33636,"Pharmatec Pakistan (Pvt) Ltd.,",Mecotec 500mcg Tablet,Each Tablet contains: Mecobalamin …… 500mcg,100,Rs. 837.17
+33636,"Pharmatec Pakistan (Pvt) Ltd.,",Mecotec 500mcg Tablet,Each Tablet contains: Mecobalamin …… 500mcg,30,Rs. 251.30
+4434,Ethical Laboratories (Pvt) Ltd,Phenobarbitone Tablet 30mg,Phenobarbitone…30mg,100's,Rs. 60.47
+89749,Fozan Pharmaceutical Industries (Pvt.) Ltd.,Phenofoz Tablet 30mg,Phenobarbitone….30mg,3x10's,Rs. 18.98
+37533,Genix Pharma (Private) Limited,Genoxen Tablet 500mg,Naproxen Sodium….500mg,2 x 10's,Rs. 211.81
+37531,Genix Pharma (Private) Limited,Genovax Tablet 10mg,Atorvastatin….10mg,10's,Rs. 353.71
+37537,Genix Pharma (Private) Limited,Genovax Tablet 20mg,Atorvastatin….20mg,10's,Rs. 517.83
+42242,Genix Pharma (Private) Limited,Genovax Tablet 40mg,Atorvastatin….40mg,10's,Rs. 459.82
+55855,Genix Pharma (Private) Limited,Genovax Tablet 80mg,Atorvastatin….80mg,10's,Rs. 847.40
+57713,Genix Pharma (Private) Limited,Genovax-E 10/10mg Tablet,Atorvastatin 10mg + Ezetimibe 10mg,10's,Rs. 292.21
+18385,Geofman Pharmaceuticals,GENOM Injection 80mg,Each 2 ml contains: Gentamicin…………….80 mg (as Gentamicin sulphate),10x2ml,Rs. 334.68
+42133,Geofman Pharmaceuticals,FENOFEX Tablet 120mg,Each film coated Tablet contains: Fexofenadine Hydrochloride…...120mg,10's,Rs. 157.51
+42134,Geofman Pharmaceuticals,FENOFEX Tablet 180mg,Each film coated Tablet contains: Fexofenadine Hydrochloride……180mg,10's,Rs. 203.68
+42132,Geofman Pharmaceuticals,FENOFEX Tablet 60mg,Each film coated Tablet contains: Fexofenadine Hydrochloride……60mg,10's,Rs. 74.68
+29418,Geofman Pharmaceuticals,GENOM Injection 40mg,Each 2 ml contains: Gentamicin…………….40mg (as Gentamincin sulphate),3x1ml,Rs. 44.81
+87348,Global Pharmaceuticals (Pvt.) Ltd.,Protole Injection 40mg (Powder for Solution for intravenous Injection),Each Vial Contains : Omeprazole sodium eq.to Omeprazole…..40mg (As Per Innovator’s Specification),1’s,Rs. 398.75
+35967,Global Pharmaceuticals (Pvt.) Ltd.,Renorm Tablet 10mg,Each Tablet contains: Atorvastatin Calcium Trihydrate eq. to Atorvastatin.. 10mg,1x10's,Rs. 344.06
+35968,Global Pharmaceuticals (Pvt.) Ltd.,Renorm Tablet 20mg,Each Tablet contains: Atorvastatin Calcium Trihydrate eq. to Atorvastatin….. 20mg,1x10's,Rs. 503.70
+87349,Global Pharmaceuticals (Pvt.) Ltd.,Esmazole Injection 40mg/vial (Powder for Solution for intravenous Injection),Each Vial Contains : Esomeprazole sodium eq.to Esomeprazole…..40mg (As Per Innovator’s Specification),1’s,Rs. 352.77
+89631,Global Pharmaceuticals (Pvt.) Ltd.,Renocept Tablet 500mg,Each Tablet contains: Mycophenolate Mofetil…500mg (USP Specification),10's,"Rs. 1,292.67"
+89631,Global Pharmaceuticals (Pvt.) Ltd.,Renocept Tablet 500mg,Each Tablet contains: Mycophenolate Mofetil…500mg (USP Specification),20's,"Rs. 2,585.35"
+89631,Global Pharmaceuticals (Pvt.) Ltd.,Renocept Tablet 500mg,Each Tablet contains: Mycophenolate Mofetil…500mg (USP Specification),50's,"Rs. 6,463.37"
+7467,SAMI Pharmaceuticals (Pvt.) Limited,PENORIT 10mg+0.02mg Tablet,Norethisterone Acetate 10mg + Ethinyloestradiol 0.02mg,20's,Rs. 182.51
+70788,SAMI Pharmaceuticals (Pvt.) Limited,RENOVA 320mg Tablet,Gemifloxacin….320mg,7's,"Rs. 1,555.28"
+61917,Pharmevo (Pvt.) Ltd.,Tenova 300 mg Tablet,Tenofovir……300mg,3 x 10's,"Rs. 4,748.15"
+97082,Scilife Pharma Private Limited,Teno-Alf 25mg Tablet,Tenofovir Alafenamide….25mg,10's,Rs. 995.50
+97082,Scilife Pharma Private Limited,Teno-Alf 25mg Tablet,Tenofovir Alafenamide….25mg,30's,"Rs. 2,985.40"
+90358,"Saffron Pharmaceuticals (Pvt.) Ltd.,",Tenosaf-B 300mg Tablet,Tenofovir Disoproxil Fumarate e.q to Tenofovir Disoproxil….300mg,30’s,"Rs. 4,463.43"
+89442,"Saffron Pharmaceuticals (Pvt.) Ltd.,",Xenocit Syrup,Levocetirizine 2HCL,60ml,Rs. 48.37
+89442,"Saffron Pharmaceuticals (Pvt.) Ltd.,",Xenocit Syrup,Levocetirizine 2HCL,120ml,Rs. 91.76
+89961,"Saffron Pharmaceuticals (Pvt.) Ltd.,",Xenocit 5mg Tablet,Levocetirizine 2HCL…..5mg,10's,Rs. 76.01
+89961,"Saffron Pharmaceuticals (Pvt.) Ltd.,",Xenocit 5mg Tablet,Levocetirizine 2HCL…..5mg,20's,Rs. 149.26
+24095,The Searle Company Limited,Fenogal 200mg Capsule,Fenofibrate….200mg,10's,Rs. 121.46
+98328,"Searl IV Solution (Pvt.) Ltd.,",Tenorains 300mg Tablet,Each Tablet contains: Tenovofir disproxil fumarate……..300mg (IP specification),30's,"Rs. 4,463.43"
+64834,"Searl IV Solution (Pvt.) Ltd.,",Macsol N/3 Intravenous,Each 100ml contains Dextrose …………3.3gm Sodium chloride ……0.3gm Water For Injection qs to … 100ml (Mac & Rains Specs),1000ml,Rs. 55.05
+64834,"Searl IV Solution (Pvt.) Ltd.,",Macsol N/3 Intravenous,Each 100ml contains Dextrose …………3.3gm Sodium chloride ……0.3gm Water For Injection qs to … 100ml (Mac & Rains Specs),500ml,Rs. 45.42
+27929,"Pharmatec Pakistan (Pvt) Ltd.,",Tenozide Tablet,Each Tablet contains: Lisinopril Dihydrate eq. to Lisinopril ...20mg Hydrochlorothiazide….12.50mg,14's,Rs. 341.08
+22375,"Pharmatec Pakistan (Pvt) Ltd.,",Glurenor Tablet,Each Tablet contains: Gemifloxacin as Mesylate … 320mg,20,Rs. 296.25
+15623,ICI Pakistan Limited,Tenormin Tablet 25mg,Atenolol,14's,
+9562,ICI Pakistan Limited,Tenoret-50 Tablet,(atenolol + Chlorthalidone) 50mg+12.5mg,14's,
+4396,ICI Pakistan Limited,Tenormin Tablet 100mg,Atenolol,14's,Rs. 184.64
+7167,ICI Pakistan Limited,Tenormin Tablet 50mg,Atenolol,14's,Rs. 120.97
+97713,Iqra Pharmaceuticals,Caspro 2mg / ml Intravenous Infusion,Each 100ml Infusion bottle contains: Ciprofloxacin (as lactate)………....200mg,100ml,Rs. 123.05
+97714,Iqra Pharmaceuticals,Lebact 5mg/ml Intravenous Infusion,Each 100ml Infusion bottle contains: Levofloxacin (as Hemihydrate)…………500mg (JP Specifications),100ml,Rs. 307.09
+97715,Iqra Pharmaceuticals,Q-Mol 10mg/ml Intravenous Infusion,Each 100ml Infusion bottle contains: Paracetamol…………………...…1000mg,100ml,Rs. 98.44
+67052,Macter International Limited,Alenor Syrup,Desloratadine.. 2.5mg,120ml,Rs. 121.46
+67053,Macter International Limited,Alenor Reditab Tablet,Desloratadine.. 2.5mg,10,Rs. 88.87
+8162,Abbott Laboratories (Pakistan) Limited,ENTAMIZOLE DS Tablet,"Each Tablet Contains: Diloxanide Furoate 500mg, Metronidazole 400mg.",15S,Rs. 107.00
+44309,High-Q Pharmaceuticals,Eskem Capsule,Esomeprazole 20mg,14's,Rs. 230.83
+44310,High-Q Pharmaceuticals,Eskem Capsule,Esomeprazole 40mg,14's,Rs. 438.59
+92691,High-Q Pharmaceuticals,Eskem Injection,Esomeprazole 40 mg,1's,Rs. 365.26
+32960,Shaigan Pharmaceuticals (Pvt.) Ltd.,Esso-20mg Capsule,Each Capsule Contains:- Delayed relese pellets of Esomeprazole magnesium Trihydrate eq.to Esomeprazole…………..20mg (USP Specifications),14's,Rs. 235.23
+32960,Shaigan Pharmaceuticals (Pvt.) Ltd.,Esso-20mg Capsule,Each Capsule Contains:- Delayed relese pellets of Esomeprazole magnesium Trihydrate eq.to Esomeprazole…………..20mg (USP Specifications),10's,Rs. 176.78
+32961,Shaigan Pharmaceuticals (Pvt.) Ltd.,Esso-40mg Capsule,Each Capsule Contains:- Delayed relese pellets of Esomeprazole magnesium Trihydrate eq.to Esomeprazole…………..40mg (USP Specifications),14,Rs. 447.07
+32961,Shaigan Pharmaceuticals (Pvt.) Ltd.,Esso-40mg Capsule,Each Capsule Contains:- Delayed relese pellets of Esomeprazole magnesium Trihydrate eq.to Esomeprazole…………..40mg (USP Specifications),10's,Rs. 336.04
+54490,Shaigan Pharmaceuticals (Pvt.) Ltd.,Esso-40 Injection I.V,Each vial contains:- Esomeprazole Sodium equivalent to Esomeprazole….40mg,1's,Rs. 438.31
+52624,Shaigan Pharmaceuticals (Pvt.) Ltd.,Esso-20 Tablet,Esomeprazole magnesium Trihydrate eq. to Esomeprazole…………..20mg,14's,Rs. 173.86
+52625,Shaigan Pharmaceuticals (Pvt.) Ltd.,Esso-40 Tablet,Esomeprazole magnesium Trihydrate eq. to Esomeprazole…………..40mg,14's,Rs. 289.28
+67028,"Le Mendoza Pharmaceutical (Pvt) Ltd.,",Essocam 20mg Capsule,Each Capsule Contains: Esomeprazole enteric coated pellets eq to Esomeprazole.. 20mg,14's,Rs. 161.58
+67029,"Le Mendoza Pharmaceutical (Pvt) Ltd.,",Essocam 40mg Capsule,Each Capsule Contains: Esomeprazole enteric coated pellets eq to Esomeprazole...40mg,14's,Rs. 268.85
+87030,Fedro Pharmaceutical Lab (Pvt) Ltd.,Essofed 40mg Injection,Esomeprazole as sodium…40mg,1's,Rs. 348.76
+75511,Fedro Pharmaceutical Lab (Pvt) Ltd.,Essofed - 20 Capsule,Esomeprazole magnesium trihydrate enteric coated pellets eq. to esomeprazole….20mg,2 x 7's,Rs. 167.92
+75512,Fedro Pharmaceutical Lab (Pvt) Ltd.,Essofed - 40 Capsule,Esomeprazole magnesium trihydrate enteric coated pellets eq. to esomeprazole….40mg,2 x 7's,Rs. 455.78
+95365,Evolution Pharmaceuticals (Pvt.) Ltd.,Clessol Tablet 40mg,Pantoprazole Sodium Sesquihydrate,2 x 7's,Rs. 325.88
+95365,Evolution Pharmaceuticals (Pvt.) Ltd.,Clessol Tablet 40mg,Pantoprazole Sodium Sesquihydrate,2 x 7's,Rs. 325.88
+77990,NORTECH PHARMACEUTICALS,Essonor 20mg Capsules,Esomperazole 20mg(as mg trihydrate),2 x 7’s,Rs. 150.54
+77991,NORTECH PHARMACEUTICALS,Essonor 40mg Capsules,Esomperazole 40mg(as mg trihydrate),2 x 7’s,Rs. 250.47
+62480,Hoover Pharmaceuticals (Pvt.) Ltd.,Capsule Essopel insta,Esomeprazole Magnesium Trihdrate enteric coated Pellets 22.5% w/w eq. to Esomeprazole…….40mg,2x7's,Rs. 279.39
+62480,Hoover Pharmaceuticals (Pvt.) Ltd.,Capsule Essopel insta,Esomeprazole Magnesium Trihdrate enteric coated Pellets 22.5% w/w eq. to Esomeprazole…….40mg,1x10's,Rs. 198.96
+62481,Hoover Pharmaceuticals (Pvt.) Ltd.,Capsule Essopel insta,Esomeprazole Magnesium Trihdrate enteric coated Pellets 22.5% w/w eq. to Esomeprazole…...20mg,2x7's,Rs. 167.92
+62481,Hoover Pharmaceuticals (Pvt.) Ltd.,Capsule Essopel insta,Esomeprazole Magnesium Trihdrate enteric coated Pellets 22.5% w/w eq. to Esomeprazole…...20mg,1x10's,Rs. 119.94
+86357,Hoover Pharmaceuticals (Pvt.) Ltd.,Essopel insta 40mg Scahet,Enteric Coated Pellets of Esomeprazole magnesium Trihydrate eq. Esomeprazole….40mg,14's,Rs. 306.20
+86358,Hoover Pharmaceuticals (Pvt.) Ltd.,Essopel insta 20mg Scahet,Enteric Coated Pellets of Esomeprazole magnesium Trihydrate eq. Esomeprazole…...20mg,14's,Rs. 183.44
+102863,Getz Pharma (Pvt.) Limited,Fexet Oral Suspension 30mg/5ml,Each 5ml contains: Fexofenadine Hydrochloride …. 30mg,60ml,Rs. 74.68
+29435,Getz Pharma (Pvt.) Limited,Fexet Tablet 120mg,Each film-coated Tablet contains: Fexofenadine HCl… 120mg,20's,Rs. 446.42
+29436,Getz Pharma (Pvt.) Limited,Fexet Tablet 180mg,Each film-coated Tablet contains: Fexofenadine HCl… 180mg,20's,Rs. 607.41
+29434,Getz Pharma (Pvt.) Limited,Fexet Tablet 60mg,Each film-coated Tablet contains: Fexofenadine HCl… 60mg,20's,Rs. 267.84
+39099,Getz Pharma (Pvt.) Limited,Fexet-D Tablet 60mg + 120mg,Each film-coated Tablet contains: Fexofenadine HCl… 60mg Pseudoephedrine HCl… 120mg,10's,Rs. 125.65
+5102,Sanofi-aventis Pakistan limited,Flagyl Infusion,Metronidazole,100ml,Rs. 144.70
+1214,Sanofi-aventis Pakistan limited,Flagyl Suspension,Metronidazole ...200mg/5ml,120ml Bottle,Rs. 95.05
+1214,Sanofi-aventis Pakistan limited,Flagyl Suspension,Metronidazole... 200mg/5ml,90ml Bottle,Rs. 72.57
+1214,Sanofi-aventis Pakistan limited,Flagyl Suspension,Metronidazole ...200mg/5ml,60ml Bottle,Rs. 48.38
+827,Sanofi-aventis Pakistan limited,Flagyl Tablet,Metronidazole ….400mg,20x10,Rs. 444.86
+827,Sanofi-aventis Pakistan limited,Flagyl Tablet,Metronidazole ….400mg,300's,Rs. 611.03
+64850,Sanofi-aventis Pakistan limited,Flagyl Plus Suspension,Benzoyl Metronidazole 200mg+ Diloxanide Furoate 250mg,60ml Bottle,Rs. 52.92
+64850,Sanofi-aventis Pakistan limited,Flagyl Plus Suspension,Benzoyl Metronidazole 200mg+ Diloxanide Furoate 250mg,90ml Bottle,Rs. 78.63
+55977,Sanofi-aventis Pakistan limited,Flagyl Plus Tablet,Benzoyl Metronidazole 400mg+ Diloxanide Furoate 500mg,15's,Rs. 107.98
+910,Sanofi-aventis Pakistan limited,Flagyl Tablet,Metronidazole ….200mg,20 x 10,Rs. 302.37
+10077,GlaxoSmithKline Pakistan Ltd.,Fortum Injection 1g,Ceftazidime,1's,Rs. 375.96
+15819,GlaxoSmithKline Pakistan Ltd.,Fortum Injection 250mg,Ceftazidime,1's,Rs. 131.57
+10078,GlaxoSmithKline Pakistan Ltd.,Fortum Injection 500mg,Ceftazidime,1's,
+16024,Reckitt Benckiser Pakistan Limited,Gaviscon Liquid,Each 10ml contains; Sodium Alginate…500mg Sodium Bicarbonate…..267mg,120 ml,Rs. 91.38
+16024,Reckitt Benckiser Pakistan Limited,Gaviscon Liquid,Each 10ml contains; Sodium Alginate…500mg Sodium Bicarbonate……..267mg,240 ml,Rs. 185.33
+67066,Reckitt Benckiser Pakistan Limited,Gaviscon Advance,Each 10ml contains:- Sodium Alginate...........1000mg Potassium Bicarbonate........200mg,120 ml,Rs. 155.87
+44360,Getz Pharma (Pvt.) Limited,Getformin Tablet 1mg+500mg,Each film-coated Tablet contains: Glimepiride… 1mg Metformin HCl... 500mg,30’s,Rs. 219.15
+44126,Getz Pharma (Pvt.) Limited,Getformin Tablet 2mg+500mg,Each film-coated Tablet contains: Glimepiride… 2mg Metformin HCl... 500mg,30’s,Rs. 360.87
+42375,Indus Pharma (Pvt.) Ltd.,Indazole Capsule 20mg,Esomeprazole 20mg/Capsule (as Esomeprazole Magnesium Trihydrate),14's,Rs. 248.38
+42376,Indus Pharma (Pvt.) Ltd.,Indazole Capsule 40mg,Esomeprazole 40mg/Capsule (as Esomeprazole Magnesium Trihydrate),14's,Rs. 471.91
+95079,Indus Pharma (Pvt.) Ltd.,Indazole Injection 40mg IV,Esomeprazole (as sodium) 40mg,1's,Rs. 295.19
+538,ICI Pakistan Limited,INDERAL Tablet 40mg,Propranolol,50's,Rs. 210.57
+531,ICI Pakistan Limited,INDERAL Tablet 10mg,Propranolol,50's,Rs. 98.27
+53278,Getz Pharma (Pvt.) Limited,Lipiget EZ Tablet 10mg+10mg,Each Tablet contains: Atorvastatin … 10mg (as atorvastatin calcium trihydrate) Ezetimibe … 10mg,1 x 10's,Rs. 730.51
+73714,Getz Pharma (Pvt.) Limited,Lipiget EZ Tablet 20mg + 10mg,Each Tablet contains: Atorvastatin … 20mg (as atorvastatin calcium trihydrate) Ezetimibe … 10mg,10's,Rs. 489.75
+73715,Getz Pharma (Pvt.) Limited,Lipiget EZ Tablet 40mg + 10mg,Each Tablet contains: Atorvastatin … 40mg (as atorvastatin calcium trihydrate) Ezetimibe … 10mg,10's,Rs. 698.61
+29956,Getz Pharma (Pvt.) Limited,Lipiget Tablet 10mg,Each film-coated Tablet contains: Atorvastatin ………10mg (as calcium trihydrate salt),10's,Rs. 297.12
+29956,Getz Pharma (Pvt.) Limited,Lipiget Tablet 10mg,Each film-coated Tablet contains: Atorvastatin …………10mg (as calcium trihydrate salt),30's,Rs. 820.62
+29956,Getz Pharma (Pvt.) Limited,Lipiget Tablet 10mg,Each film-coated Tablet contains: Atorvastatin ………10mg (as calcium trihydrate salt),100's,"Rs. 2,228.41"
+29957,Getz Pharma (Pvt.) Limited,Lipiget Tablet 20mg,Each film-coated Tablet contains: Atorvastatin……….20mg (as calcium trihydrate salt),10's,Rs. 564.53
+29957,Getz Pharma (Pvt.) Limited,Lipiget Tablet 20mg,Each film-coated Tablet contains: Atorvastatin……….20mg (as calcium trihydrate salt),30's,"Rs. 1,557.76"
+29957,Getz Pharma (Pvt.) Limited,Lipiget Tablet 20mg,Each film-coated Tablet contains: Atorvastatin……….20mg (as calcium trihydrate salt),100's,"Rs. 3,883.79"
+29958,Getz Pharma (Pvt.) Limited,Lipiget Tablet 40mg,Each film-coated Tablet contains: Atorvastatin……….40mg (as calcium trihydrate salt),10's,"Rs. 1,117.74"
+29958,Getz Pharma (Pvt.) Limited,Lipiget Tablet 40mg,Each film-coated Tablet contains: Atorvastatin……….40mg (as calcium trihydrate salt),30's,"Rs. 3,084.40"
+29958,Getz Pharma (Pvt.) Limited,Lipiget Tablet 40mg,Each film-coated Tablet contains: Atorvastatin……….40mg (as calcium trihydrate salt),100's,"Rs. 8,085.93"
+34401,Wilshire Laboratories (Pvt) Ltd.,MODLIP Tablet,Simvastatin 10mg,1x10's,Rs. 220.65
+34402,Wilshire Laboratories (Pvt) Ltd.,MODLIP Tablet,Simvastatin 20mg,1x10's,Rs. 332.31
+34403,Wilshire Laboratories (Pvt) Ltd.,MODLIP Tablet,Simvastatin 40mg,1x10's,Rs. 551.63
+33890,Getz Pharma (Pvt.) Limited,Nexum Capsule 20mg,Each Capsule contains: Enteric-coated pellets of Esomeprazole magnesium trihydrate equivalent to Esomeprazole … 20mg,2x7's,Rs. 248.37
+33891,Getz Pharma (Pvt.) Limited,Nexum Capsule 40mg,Each Capsule contains: Enteric-coated pellets of Esomeprazole magnesium trihydrate equivalent to Esomeprazole … 40mg,2x7's,Rs. 471.91
+50651,Getz Pharma (Pvt.) Limited,Nexum IV 40mg,Each vial contains: Esomeprazole sodium equivalent to esomeprazole...40mg (Suitably buffered),1's,Rs. 438.31
+32430,Getz Pharma (Pvt.) Limited,Nexum Tablet 20mg,Each Tablet contains: Esomeprazole magnesium trihydrate equivalent to Esomeprazole … 20mg,14's,Rs. 244.87
+32431,Getz Pharma (Pvt.) Limited,Nexum Tablet 40mg,Each Tablet contains: Esomeprazole magnesium trihydrate equivalent to Esomeprazole … 40mg,14's,Rs. 465.26
+61943,MEDIATE PHARMACEUTICALS(Pvt.) Ltd.,M-Nexum 550mg Tablet,Each Tablet Contains. Naproxen sodium 550 mg,20's,Rs. 180.90
+11825,Pfizer Pakistan Limited,Norvasc Tablet,Amlodipine (besylate)…...5mg,20's,Rs. 274.28
+11826,Pfizer Pakistan Limited,Norvasc Tablet,Amlodipine (besylate)…...10mg,20's,Rs. 536.48
+89106,Pfizer Pakistan Limited,Norvasc V 10mg/160mg Tablet,Amlodipine (besylate)….10mg Valsartan……..160mg,2x7's,Rs. 551.29
+89106,Pfizer Pakistan Limited,Norvasc V 10mg/160mg Tablet,Amlodipine (besylate)….10mg Valsartan……..160mg,30's,"Rs. 1,157.70"
+89105,Pfizer Pakistan Limited,Norvasc V 5mg/160mg Tablet,Amlodipine (besylate)….5mg Valsartan ………..160mg,2x7's,Rs. 469.82
+89105,Pfizer Pakistan Limited,Norvasc V 5mg/160mg Tablet,Amlodipine (besylate)….5mg Valsartan ………..160mg,30's,Rs. 986.61
+89104,Pfizer Pakistan Limited,Norvasc V 5mg/80mg Tablet,Amlodipine (besylate)…..5mg Valsartan…..80mg,2x7's,Rs. 328.60
+89104,Pfizer Pakistan Limited,Norvasc V 5mg/80mg Tablet,Amlodipine (besylate)…..5mg Valsartan…..80mg,30's,Rs. 690.06
+58052,OBS Pakistan (Pvt.) Ltd.,Co-Novatec 10/12.5mg Tablet,Lisinopril & Hydrochlorothiazide,14's,Rs. 191.86
+55575,OBS Pakistan (Pvt.) Ltd.,Co-Novatec 20mg+12.5mg Tablet,Lisinopril & Hydrochlorothiazide,30's,Rs. 628.65
+55575,OBS Pakistan (Pvt.) Ltd.,Co-Novatec 20mg+12.5mg Tablet,Lisinopril & Hydrochlorothiazide,28's,Rs. 594.37
+12853,OBS Pakistan (Pvt.) Ltd.,Novatec 10mg Tablet,Lisinopril,30's,Rs. 522.10
+12852,OBS Pakistan (Pvt.) Ltd.,Novatec 5mg Tablet,Lisinopril,30's,Rs. 266.69
+58051,OBS Pakistan (Pvt.) Ltd.,Novatec 20mg Tablet,Lisinopril,10's,Rs. 174.79
+27196,The Searle Company Limited,Nuberol Fort Tablet,Paracetamol + Orphenadine Citrate (650mg + 50mg),15's,Rs. 97.77
+27196,The Searle Company Limited,Nuberol Fort Tablet,Paracetamol + Orphenadine Citrate (650mg + 50mg),20's,Rs. 112.70
+27196,The Searle Company Limited,Nuberol Fort Tablet,Paracetamol + Orphenadine Citrate (650mg + 50mg),30's,Rs. 161.58
+27196,The Searle Company Limited,Nuberol Fort Tablet,Paracetamol + Orphenadine Citrate (650mg + 50mg),50's,Rs. 259.35
+27196,The Searle Company Limited,Nuberol Fort Tablet,Paracetamol + Orphenadine Citrate (650mg + 50mg),100's,Rs. 520.06
+36227,The Searle Company Limited,Nuberol Plus,Paracetamol….450mg Orphenadrine…..35mg Caffeine…..60mg,100's,Rs. 302.36
+73516,The Searle Company Limited,Nuberol She Tablet,Paracetamol...…500mg Pamabrom…...25mg,100's,Rs. 196.54
+74301,"Searl IV Solution (Pvt.) Ltd.,",Nuberol-P IV Infusion,Each 100ml Contains ;- Paracetamol --------1gm,100ml,Rs. 110.10
+102348,Health Care Pharmaceuticals,Zedrant Reduced Osmolarity ORS Sachet,Each Sachet contains: Glucose Anhydrous……….……13.5 g. Sodium Citrate……………….….2.9 g. Sodium Chloride……………..…..2.6 g. Potassium Chloride…………...…1.5 g.,20's,Rs. 307.90
+88203,Tabros Pharma (Pvt) Ltd.,ZATRIK (Low Osmolarity ORS),"Sodium chloride 1.3gm, Potassium chloride 0.75gm, Trisodium citrate dihydrate 1.45gm, Glucose anhydrous 6.75gm",20's,Rs. 212.65
+45416,ATCO Laboratories Ltd.,OSMOLAR ORS,Each Sachet contains:- Sodium Chloride 1.3g Potassium Chloride 0.75g + Trisoiudm Citrate Dihydrate 1.45g +Glucose Anhydrous 6.75g Equivalent to: Sodium 37.5 mmol Chloride 32.5 mmol Potassium 10.0 mmol Citrate 5.0 mmol Glucose 37.5 mmol,20's,Rs. 220.20
+80782,Nabiqasim industries (pvt) ltd.,Normolyte Low Osmolarity,Lemon Sodium Chl. 2.6g + Trisodium Cit. 2.9g + Pot. Ch. 1.5g + Glucose 13.5g,1's,Rs. 12.94
+80782,Nabiqasim industries (pvt) ltd.,Normolyte Low Osmolarity,Lemon Sodium Chl. 2.6g + Trisodium Cit. 2.9g + Pot. Ch. 1.5g + Glucose 13.5g,20's,Rs. 258.74
+80783,Nabiqasim industries (pvt) ltd.,Normolyte Low Osmolarity,Orange Sodium Chl. 2.6g + Trisodium Cit. 2.9g + Pot. Ch. 1.5g + Glucose 13.5g,1's,Rs. 12.94
+80783,Nabiqasim industries (pvt) ltd.,Normolyte Low Osmolarity,Orange Sodium Chl. 2.6g + Trisodium Cit. 2.9g + Pot. Ch. 1.5g + Glucose 13.5g,20's,Rs. 258.74
+70854,AGP Limited,OSNATE D Suspension,Ossien Mineral Complex & Vit D,60ml,Rs. 207.37
+70854,AGP Limited,OSNATE D Suspension,Ossein Mineral Complex & Vit D,120ml,Rs. 394.00
+55948,AGP Limited,OSNATE D Tablet 830MG/400IU,Ossien Mineral Complex & Vit D,30's,Rs. 333.27
+101140,GlaxoSmithKline Consumer Healthcare Pakistan Limited,Children's Panadol Drops,Paracetamol 80mg/0.8ml,20ml,Rs. 45.37
+101140,GlaxoSmithKline Consumer Healthcare Pakistan Limited,Children's Panadol Drops,Paracetamol 80mg/0.8ml,30ml,Rs. 67.50
+101139,GlaxoSmithKline Consumer Healthcare Pakistan Limited,Children's Panadol Liquid,Paracetamol 160mg/5ml,120ml,Rs. 92.21
+101139,GlaxoSmithKline Consumer Healthcare Pakistan Limited,Children's Panadol Liquid,Paracetamol 160mg/5ml,100ml,Rs. 77.10
+101141,GlaxoSmithKline Consumer Healthcare Pakistan Limited,Panadol Extra Tablet,Paracetamol 500mg & Caffeine 65mg,100's,Rs. 182.47
+101138,GlaxoSmithKline Consumer Healthcare Pakistan Limited,Panadol Tablet,Paracetamol 500mg,200's,Rs. 312.55
+76453,GlaxoSmithKline Pakistan Limited,Panadol Forte Suspension,Paracetamol,90ml,Rs. 76.34
+97070,GlaxoSmithKline Pakistan Limited,Panadol Extend Tablet,Paracetamol,20's,Rs. 107.00
+13113,GlaxoSmithKline Pakistan Limited,Panadol CF Tablet,"Paracetamol 500mg, Pseudoephedrine HCl 60mg, & Chlorpheniramine maleate 4mg",100's,Rs. 379.67
+94797,GlaxoSmithKline Pakistan Limited,Panadol CF Day Caplets,Paracetamol 500mg & Phenylephrine HCl 5mg,100's,Rs. 354.22
+76453,GlaxoSmithKline Pakistan Limited,Panadol Forte Suspension,Paracetamol 250mg/5ml,60ml,Rs. 46.55
+73487,GlaxoSmithKline Pakistan Limited,Panadol Expectorant Syrup,"Each 5ml contains: Guaifenesin 100mg, Phenylephrine HCl +5mg & Triprolidine HCl 1.25mg",90ml,Rs. 47.52
+138,Pfizer Pakistan Limited,Ponstan Tablet,Mefenamic Acid …..250mg,600's,"Rs. 1,073.40"
+28760,Pfizer Pakistan Limited,Ponstan Flash Tablet,Mefenamic Acid ……..250mg,100's,Rs. 269.10
+5539,Pfizer Pakistan Limited,Ponstan Suspension,Mefenamic Acid -,60ml,Rs. 50.19
+6978,Pfizer Pakistan Limited,Ponstan Forte Tablet,Mefenamic Acid…..500mg,200's,Rs. 602.11
+19364,Getz Pharma (Pvt.) Limited,Risek Capsule 20mg,Each Capsule contains: Enteric-coated pellets of omeprazole equivalent to omeprazole ... 20mg,2 x 7's,Rs. 660.46
+22109,Getz Pharma (Pvt.) Limited,Risek Capsule 40mg,Each Capsule contains: Enteric-coated pellets of omeprazole equivalent to omeprazole ... 40mg,14's,"Rs. 1,105.15"
+58547,Getz Pharma (Pvt.) Limited,Risek Insta Sachet 20mg + 1680mg,Each Sachet contains: Omeprazole…20mg Sodium Bicarbonate…1680mg (as buffer),10's,Rs. 170.69
+58548,Getz Pharma (Pvt.) Limited,Risek Insta Sachet 40mg + 1680mg,Each Sachet contains: Omeprazole…40mg Sodium Bicarbonate…1680mg (as buffer),10's,Rs. 275.25
+24170,Getz Pharma (Pvt.) Limited,Risek IV 40mg,Each vial contains: Omeprazole sodium equivalent to omeprazole...40mg,1's,Rs. 431.43
+24170,Getz Pharma (Pvt.) Limited,Risek IV 40mg,Each vial contains: Omeprazole sodium equivalent to omeprazole...40mg,2's,Rs. 862.87
+23362,Pfizer Pakistan Limited,Arthrotec Tablet,Diclofenic Sodium/ Misoprostol….50mg,20's,Rs. 433.27
+53327,The Searle Company Limited,Rotec 50 mg Tablet,Diclofenac Sodium + Misoprostol (50mg + 200mg),2x10’s,Rs. 332.22
+58523,The Searle Company Limited,Rotec 75 mg Tablet,Diclofenac Sodium + Misoprostol (75mg + 200mg),2x10’s,Rs. 345.23
+103607,Derma Techno Pakistan,Azithrotech 250mg Capsule,Azithromycin as dehydrate …250mg,6's,Rs. 163.71
+103608,Derma Techno Pakistan,Rithrotech 500mg Tablet,Clarithromycin …….. 500mg,10's,Rs. 428.00
+103609,Derma Techno Pakistan,Rithrotech 250mg Tablet,Clarithromycin …….. 250mg,10's,Rs. 256.80
+103611,Derma Techno Pakistan,Ciprotech 250mg Tablet,Ciprofloxacin as HCI … 250mg,10's,Rs. 139.10
+103612,Derma Techno Pakistan,Ciprotech 500mg Tablet,Ciprofloxacin as HCI … 500mg,10's,Rs. 230.05
+20175,Platinum Pharmaceuticals Pvt. Ltd,PROTECT Tablet,GLICLAZIDE,20'S,Rs. 138.13
+19492,AsianContinental (Pvt.) Ltd.,VOREN MICROTECH CAPSULE 50MG,Each capsule contains Diclofenac Sodium 50mg (as enteric coated pellets),100's,Rs. 840.39
+73718,Getz Pharma (Pvt.) Limited,Rovista EZ Tablet 10mg + 10mg,Each film coated Tablet contains: Rosuvastatin calcium eq. to Rosuvastatin…..10mg Ezetimibe….10mg,10's,Rs. 410.52
+73717,Getz Pharma (Pvt.) Limited,Rovista EZ Tablet 20mg + 10mg,Each film coated Tablet contains: Rosuvastatin calcium eq. to Rosuvastatin…..20mg Ezetimibe….10mg,10's,Rs. 594.90
+73716,Getz Pharma (Pvt.) Limited,Rovista EZ Tablet 5mg + 10mg,Each film coated Tablet contains: Rosuvastatin calcium eq. to Rosuvastatin…..5mg Ezetimibe….10mg,10's,Rs. 296.73
+44044,Getz Pharma (Pvt.) Limited,Rovista Tablet 10mg,Each film-coated Tablet contains: Rosuvastatin…10mg (as calcium salt),10's,Rs. 282.97
+44045,Getz Pharma (Pvt.) Limited,Rovista Tablet 20mg,Each film-coated Tablet contains: Rosuvastatin…20mg (as calcium salt),10's,Rs. 565.94
+44043,Getz Pharma (Pvt.) Limited,Rovista Tablet 5mg,Each film-coated Tablet contains: Rosuvastatin…5mg (as calcium salt),10's,Rs. 169.78
+101365,Fozan Pharmaceutical Industries (Pvt.) Ltd.,Sertrafoz Tablet 100mg,Sertraline…100mg,2x10's,"Rs. 1,138.50"
+101366,Fozan Pharmaceutical Industries (Pvt.) Ltd.,Sertrafoz Tablet 50mg,Sertraline…50mg,3x10's,Rs. 860.20
+89663,Kanel Pharma,Kasertine 50mg Tablet,Each film coated Tablet contains:- Sertraline (as HCl)…..50mg,3x10's,Rs. 923.34
+89664,Kanel Pharma,Kasertine 100mg Tablet,Each film coated Tablet contains:- Sertraline (as HCl)…..100mg,2x10's,"Rs. 1,222.07"
+99201,ARP (Pvt) Limited,Obsertin 50mg Tablet,Each film coated Tablet contains: Sertraline (as HCl)…50mg,30s,Rs. 860.20
+99202,ARP (Pvt) Limited,Obsertin 100mg Tablet,Each film coated Tablet contains: Sertraline (as HCl)…100mg,20s,"Rs. 1,138.50"
+32480,Barrett Hodgson Pakistan (Pvt) Ltd.,Sert Tablet 100mg,Each Tablet contains: Sertraline HCl eq. to Sertraline….100mg,10's,Rs. 702.69
+32479,Barrett Hodgson Pakistan (Pvt) Ltd.,Sert Tablet 50mg,Each Tablet contains: Sertraline HCl eq. to Sertraline….50mg,10's,Rs. 366.96
+78102,Bayer Pakistan (Pvt)Limited,Jadelle Sine Inserter Implants,Levonorgestril,1 pouch of 2 implants,"Rs. 1,653.39"
+46469,"Genome Pharmaceuticals (Pvt.) Ltd,",Losert-50 Tablet,Losartan Potassium…………………….50mg,2 x 10's,Rs. 280.23
+46470,"Genome Pharmaceuticals (Pvt.) Ltd,",Losert Plus Tablet,Losartan Potassium…….50mg Hydrochlorothiazide….12.50mg,2 x 10's,Rs. 398.72
+46471,"Genome Pharmaceuticals (Pvt.) Ltd,",Losert-25 Tablet,Losartan Potassium…………………….25mg,2 x 10's,Rs. 154.13
+85804,Wimits Pharmaceuticals Pvt. Ltd,Lintex 100mg Tablet (Sertraline HCl),Each Film coated Tablet contains: Sertraline as HCl……………………..100mg,2 x 10's,"Rs. 1,306.95"
+96444,Wimits Pharmaceuticals Pvt. Ltd,Lintex 50mg Tablet (Sertraline HCl),Each Film coated Tablet contains: Sertraline as HCl……………………..50mg,30's,Rs. 987.48
+101035,Fedro Pharmaceutical Lab (Pvt) Ltd.,Fedsert 50mg Tablet,Sertraline as HCl….50mg,3x10's,Rs. 748.00
+101036,Fedro Pharmaceutical Lab (Pvt) Ltd.,Fedsert 100mg Tablet,Sertraline as HCl…100mg,2x10's,Rs. 990.00
+77755,Bio-Labs (Pvt) Ltd.,Equasert 50mg Tablets,Each Tablet contains: Sertraline HCl 50mg,3 x 10's,Rs. 941.81
+77756,Bio-Labs (Pvt) Ltd.,Equasert 100mg Tablets,Each Tablet contains: Sertraline HCl 100mg,20's,"Rs. 1,246.51"
+77756,Bio-Labs (Pvt) Ltd.,Equasert Tablets 100mg,Each Tablet contains: Sertraline HCl 100mg,30's,"Rs. 1,869.76"
+92642,Hudson Pharma (Pvt.) Limited,Sertazol Cream 2%,Sertazol (Sertaconazole) Cream 2%,10gm,Rs. 255.28
+96748,Gulf Pharmaceuticals,Sitatin-P Tablet,Sitagliptin(as phosphate Monohydrate) …..25mg,2x7's,Rs. 421.25
+96746,Gulf Pharmaceuticals,Sitatin-P Tablet,Sitagliptin(as phosphate Monohydrate) …..50mg,2x7's,Rs. 688.16
+96747,Gulf Pharmaceuticals,Sitatin-P Tablet,Sitagliptin(as phosphate Monohydrate) …..100mg,2x7's,"Rs. 1,168.86"
+55476,Pharmevo (Pvt.) Ltd.,Inosita 100 mg Tablet,Sitagliptin…..100mg,28s,"Rs. 5,079.54"
+55474,Pharmevo (Pvt.) Ltd.,Inosita 25 mg Tablet,Sitagliptin……25mg,28s,"Rs. 1,825.42"
+55475,Pharmevo (Pvt.) Ltd.,Inosita 50 mg Tablet,Sitagliptin….50mg,28s,"Rs. 3,041.59"
+55486,Pharmevo (Pvt.) Ltd.,Inosita Plus 50/1000 Tablet,Sitagliptin 50mg Metformin….1000mg,28s,"Rs. 3,102.98"
+55477,Pharmevo (Pvt.) Ltd.,Inosita Plus 50/500 Tablet,Sitagliptin 50mg Metformin….500mg,28s,"Rs. 3,072.29"
+83004,Pharmevo (Pvt.) Ltd.,Inosita Plus 50/850 Tablet,Sitagliptin..50mg Metformin….850mg,28s,"Rs. 1,347.22"
+83004,Pharmevo (Pvt.) Ltd.,Inosita Plus Tablet 50/850mg,Sitagliptin…50mg Metformin…..850mg,14's,Rs. 640.20
+55476,Pharmevo (Pvt.) Ltd.,Inosita 100 mg Tablet,Sitagliptin…….100mg,1 x 14's,"Rs. 3,395.11"
+55475,Pharmevo (Pvt.) Ltd.,Inosita 50 mg Tablet,Sitagliptin……..50mg,1 x 14's,"Rs. 2,033.00"
+55486,Pharmevo (Pvt.) Ltd.,Inosita Plus 50/1000 Tablet,Sitagliptin…50mg Metformin…..1000mg,1 x 14's,"Rs. 2,056.93"
+55477,Pharmevo (Pvt.) Ltd.,Inosita Plus 50/500 Tablet,Sitagliptin….50mg Metformin…..500mg,1 x 14's,"Rs. 2,036.77"
+83004,Pharmevo (Pvt.) Ltd.,Inosita Plus 50/850 Tablet,Sitagliptin…..50mg Metformin…..850mg,10's,Rs. 599.22
+90993,Pharmevo (Pvt.) Ltd.,Inosita Plus XR 50/500,Sitagliptin,14s,Rs. 790.27
+90991,Pharmevo (Pvt.) Ltd.,Inosita Plus XR 50/1000,Sitagliptin,14s,Rs. 807.92
+55474,Pharmevo (Pvt.) Ltd.,Inosita 25mg Tablet,Sitaglipti………..25mg,1 x 10's,Rs. 814.71
+90992,Pharmevo (Pvt.) Ltd.,Inosita Plus XR 100/1000,Sitagliptin,14s,"Rs. 1,319.83"
+77183,"Saffron Pharmaceuticals (Pvt.) Ltd.,",Alosita - Met 50mg/500mg Tablet,Sitagliptin….50mg Metformin….500mg,14’s,Rs. 715.47
+77183,"Saffron Pharmaceuticals (Pvt.) Ltd.,",Alosita - Met 50mg/500mg Tablet,Sitagliptin….50mg Metformin….500mg,28’s,"Rs. 1,452.41"
+77184,"Saffron Pharmaceuticals (Pvt.) Ltd.,",Alosita - Met 50mg/1000mg Tablet,Sitagliptin….50mg Metformin….1000mg,14’s,Rs. 858.57
+77184,"Saffron Pharmaceuticals (Pvt.) Ltd.,",Alosita - Met 50mg/1000mg Tablet,Sitagliptin….50mg Metformin….1000mg,28’s,"Rs. 1,742.89"
+77186,"Saffron Pharmaceuticals (Pvt.) Ltd.,",Alosita 50mg Tablet,Sitagliptin as Phosphates….50mg,14’s,"Rs. 1,523.25"
+77187,"Saffron Pharmaceuticals (Pvt.) Ltd.,",Alosita 100mg Tablet,Sitagliptin as Phosphates….100mg,14’s,"Rs. 2,031.00"
+55158,Hilton Pharma (Pvt) Ltd.,SITAGLU 25mg Tablet,SITAGLIPTIN….25MG,14's,"Rs. 1,140.59"
+55159,Hilton Pharma (Pvt) Ltd.,SITAGLU 50mg Tablet,SITAGLIPTIN….50MG,14's,"Rs. 1,900.99"
+55160,Hilton Pharma (Pvt) Ltd.,SITAGLU 100mg Tablet,SITAGLIPTIN….100MG,14's,"Rs. 3,174.66"
+55161,Hilton Pharma (Pvt) Ltd.,SITAGLU MET 50/500 Tablet,SITAGLIPTIN PHOSPHATE…50MG METFORMIN HCL….500MG,14's,"Rs. 1,920.00"
+88218,Hilton Pharma (Pvt) Ltd.,SITAGLU-MET 50/850 Tablet,SITAGLIPTIN PHOSPHATE…50MG METFORMIN HCL….850MG,14's,Rs. 790.27
+55162,Hilton Pharma (Pvt) Ltd.,SITAGLU MET 50/1000 Tablet,SITAGLIPTIN PHOSPHATE…50MG METFORMIN HCL….1000MG,14's,"Rs. 1,939.01"
+98817,Hilton Pharma (Pvt) Ltd.,SITAGLU-MET XR 50/500 mg Tablet,SITAGLIPTIN PHOSPHATE….50MG METFORMIN HCL….500MG,14's,Rs. 640.20
+98818,Hilton Pharma (Pvt) Ltd.,SITAGLU-MET XR 100/1000 mg Tablet,SITAGLIPTIN PHOSPHATE….100MG METFORMIN HCL….1000MG,14's,"Rs. 1,069.20"
+98819,Hilton Pharma (Pvt) Ltd.,SITAGLU-MET XR 50/1000 mg Tablet,SITAGLIPTIN PHOSPHATE….50MG METFORMIN HCL….1000MG,14's,Rs. 654.50
+90084,Karsons Pharmaceuticals,Karsita 50mg/500mg Tablet,Sitagliptin + Metformin Hydrochloride,10's,Rs. 498.35
+90084,Karsons Pharmaceuticals,Karsita 50mg/500mg Tablet,Sitagliptin + Metformin Hydrochloride,14'S,Rs. 697.69
+90084,Karsons Pharmaceuticals,Karsita 50mg/500mg Tablet,Sitagliptin + Metformin Hydrochloride,30'S,"Rs. 1,375.70"
+90085,Karsons Pharmaceuticals,Karsita 50mg/1000mg Table,Sitagliptin + Metformin Hydrochloride,10's,Rs. 522.96
+90085,Karsons Pharmaceuticals,Karsita 50mg/1000mg Tablet,Sitagliptin + Metformin Hydrochloride,14'S,Rs. 732.15
+76233,Macter International Limited,Telsitan - H Tablet,Telmisartan + Hydrochlorothiazide80mg + 12.5mg,14's,Rs. 831.39
+57758,Macter International Limited,Telsitan - H Tablet,Telmisartan + Hydrochlorothiazide…….40mg + 12.5mg,28's,Rs. 837.08
+76234,Macter International Limited,Telsitan - H Tablet,Telmisartan + Hydrochlorothiazide…..80mg+ 25mg,14's,Rs. 838.50
+76233,Macter International Limited,Telsitan - H Tablet,Telmisartan + Hydrochlorothiazide…..80mg + 12.5mg,28's,"Rs. 1,577.51"
+76234,Macter International Limited,Telsitan - H Tablet,Telmisartan + Hydrochlorothiazide…..80mg+ 25mg,28's,"Rs. 1,584.62"
+44215,Macter International Limited,Telsitan Tablet,Telmisartan……….20mg,20,Rs. 359.94
+93176,CCL Pharmaceutical Pvt. Ltd.,SITA-MET XR 50/500,Sitagliptin 50mg + Metformin HCI (as ER)500mg,10's,Rs. 564.87
+93176,CCL Pharmaceutical Pvt. Ltd.,SITA-MET XR 50/500,Sitagliptin 50mg + Metformin HCI (as ER)500mg,14's,Rs. 790.27
+93177,CCL Pharmaceutical Pvt. Ltd.,SITA-MET XR 100/1000,Sitagliptin 100mg + Metformin HCI (as ER)1000mg,10's,Rs. 942.35
+93177,CCL Pharmaceutical Pvt. Ltd.,SITA-MET XR 100/1000,Sitagliptin 100mg + Metformin HCI (as ER)1000mg,14's,"Rs. 1,319.83"
+93178,CCL Pharmaceutical Pvt. Ltd.,SITA-MET XR 50/1000,Sitagliptin 50mg + Metformin HCI (as ER) 1000mg,10's,Rs. 577.09
+93178,CCL Pharmaceutical Pvt. Ltd.,SITA-MET XR 50/1000,Sitagliptin 50mg + Metformin HCI (as ER) 1000mg,14's,Rs. 807.92
+18529,"Himont Pharmaceuticals, (Pvt), Ltd.",Spasfon Tab,Phloroglucinol+Trimethylphloroglucinol 80/80,30's,Rs. 631.88
+18530,"Himont Pharmaceuticals, (Pvt), Ltd.",Spasfon Inj,Hydrated Phloroglucinol+Trimethylphloroglucinol 40/0.04,6's,Rs. 626.82
+374,GlaxoSmithKline Pakistan Ltd.,Thyroxine Tablet,Thyroxine sodium 50mcg,100's,Rs. 151.18
+38577,Glitz Pharma,Thyroxine Tablet (50 mcg),Each Tablet Contains: Thyroxine Sodium…. 50 mcg (BP Specs.),10 x 10's,Rs. 131.76
+39771,Tabros Pharma (Pvt) Ltd.,CO-VALTEC 160/25MG Tablet,Valsartan 160mg + Hydrochlorothiazide 25mg,28'S,Rs. 808.05
+39771,Tabros Pharma (Pvt) Ltd.,CO-VALTEC 160/25MG Tablet,Valsartan 160mg + Hydrochlorothiazide 25mg,14's,Rs. 412.26
+39770,Tabros Pharma (Pvt) Ltd.,CO-VALTEC 80/12.5MG Tablet,Valsartan 80mg + Hydrochlorothiazide 12.5mg,28'S,Rs. 485.71
+58688,Tabros Pharma (Pvt) Ltd.,CO-VALTEC 160/12.5MG Tablet,Valsartan 160mg + Hydrochlorothiazide12.5mg,28'S,Rs. 771.55
+58688,Tabros Pharma (Pvt) Ltd.,CO-VALTEC 160/12.5MG Tablet,Valsartan 160mg + Hydrochlorothiazide12.5mg,14's,Rs. 388.32
+39773,Tabros Pharma (Pvt) Ltd.,VALTEC 160 MG Tablet,VALSARTAN 160 MG,28'S,Rs. 750.50
+39773,Tabros Pharma (Pvt) Ltd.,VALTEC 160 MG Tablet,VALSARTAN 160 MG,14's,Rs. 382.91
+55899,Tabros Pharma (Pvt) Ltd.,VALTEC 40MG Tablet,VALSARTAN 40MG,28'S,Rs. 268.80
+55899,Tabros Pharma (Pvt) Ltd.,VALTEC 40MG Tablet,VALSARTAN 40MG,14's,Rs. 137.14
+39772,Tabros Pharma (Pvt) Ltd.,VALTEC 80 MG Tablet,VALSARTAN 80 MG,28'S,Rs. 458.13
+39772,Tabros Pharma (Pvt) Ltd.,VALTEC 80 MG Tablet,VALSARTAN 80 MG,14's,Rs. 229.47
+79922,Tabros Pharma (Pvt) Ltd.,VALTEC 320MG Tablet,Valsartan 320mg,28's,"Rs. 1,276.37"
+55894,Tabros Pharma (Pvt) Ltd.,VALTEC AM 5/160MG Tablet,Amlodipine as besylate 5mg+Valsartan 160mg,14's,Rs. 460.14
+55894,Tabros Pharma (Pvt) Ltd.,VALTEC AM 5/160MG Tablet,Amlodipine as besylate 5mg+Valsartan 160mg,28'S,Rs. 901.87
+55895,Tabros Pharma (Pvt) Ltd.,VALTEC AM 10/160MG Tablet,Amlodipine as besylate 10mg+Valsartan 160mg,14's,Rs. 539.93
+55895,Tabros Pharma (Pvt) Ltd.,VALTEC AM 10/160MG Tablet,Amlodipine as besylate 10mg+Valsartan 160mg,28'S,"Rs. 1,079.87"
+55896,Tabros Pharma (Pvt) Ltd.,VALTEC AM 5/80MG Tablet,Amlodipine as besylate 5mg+Valsartan 80mg,14's,Rs. 321.83
+55896,Tabros Pharma (Pvt) Ltd.,VALTEC AM 5/80MG Tablet,Amlodipine as besylate 5mg+Valsartan 80mg,28'S,Rs. 630.78
+76178,Tabros Pharma (Pvt) Ltd.,VALTEC AMH Tablet,Amlodipine 10mg + Valsartan160mg + Hydrochlorothiazide 12.5mg,28's,
+76179,Tabros Pharma (Pvt) Ltd.,VALTEC AMH Tablet,Amlodipine 10mg + Valsartan 320mg + Hydrochlorothiazide 25mg,28's,
+76180,Tabros Pharma (Pvt) Ltd.,VALTEC AMH Tablet,Amlodipine10mg + Valsartan 160mg+ Hydrochlorothiazide 25mg,28's,
+76181,Tabros Pharma (Pvt) Ltd.,VALTEC AMH Tablet,Amlodipine 5mg +Valsartan 160mg + Hydrochlorothiazide 25mg,28's,
+76016,Tabros Pharma (Pvt) Ltd.,VALTEC AMH Tablet,Amlodipine 5mg+Valsartan 160mg + Hydrochlorothiazide 12.5mg,28's,
+41195,GlaxoSmithKline Pakistan Ltd.,Ventolin Evohaler,Salbutamol sulphate 120.5mcg,200 doses,Rs. 275.25
+89274,GlaxoSmithKline Pakistan Ltd.,Ventolin Injection0.5mg/ml,Salbutamol 0.5mg/ml,5's,Rs. 130.40
+13350,GlaxoSmithKline Pakistan Ltd.,Ventolin respirator Solution,Salbutamol 0.5% w/v,20ml,Rs. 48.17
+6226,GlaxoSmithKline Pakistan Ltd.,Ventolin expectorant,"Salbutamol 1mg, Guaiphenesin 50mg/ 5ml",60ml,Rs. 29.87
+6226,GlaxoSmithKline Pakistan Ltd.,Ventolin expectorant,"Salbutamol 1mg, Guaiphenesin 50mg/ 5ml",120ml,Rs. 57.44
+287,GlaxoSmithKline Pakistan Ltd.,Ventolin Syrup,Salbutamol 2mg/5ml,60ml,Rs. 41.12
+287,GlaxoSmithKline Pakistan Ltd.,Ventolin Syrup,Salbutamol 2mg/5ml,120ml,Rs. 77.53
+17692,GlaxoSmithKline Pakistan Ltd.,Ventolin SR. Tablet 4mg,Salbutamol 4mg,100's,Rs. 238.21
+10807,GlaxoSmithKline Pakistan Ltd.,Ventolin SR. Tablet 8mg,Salbutamol 8mg,20's,Rs. 62.27
+286,GlaxoSmithKline Pakistan Ltd.,Ventolin tab 2mg,Salbutamol 2mg,100's,Rs. 145.53
+1628,GlaxoSmithKline Pakistan Ltd.,Ventolin tab 4mg,Salbutamol 4mg,120's,Rs. 209.21
+1628,GlaxoSmithKline Pakistan Ltd.,Ventolin tab 4mg,Salbutamol 4mg,100's,Rs. 173.80
+83991,GlaxoSmithKline Consumer Healthcare Pakistan Limited,Voltral EmulGel 1%,Diclofenac diethylamine 10mg/gm,20gm,Rs. 151.85
+83991,GlaxoSmithKline Consumer Healthcare Pakistan Limited,Voltral EmulGel 1%,Diclofenac diethylamine 10mg/gm,50gm,Rs. 349.78
+83991,GlaxoSmithKline Consumer Healthcare Pakistan Limited,Voltral EmulGel 1%,Diclofenac diethylamine 10mg/gm,10gm,Rs. 83.51
+89372,GlaxoSmithKline Consumer Healthcare Pakistan Limited,Voltral EmulGel 2%,Diclofenac diethylamine 20mg/gm,30gm,Rs. 316.38
+89372,GlaxoSmithKline Consumer Healthcare Pakistan Limited,Voltral EmulGel 2%,Diclofenac diethylamine 20mg/gm,50gm,Rs. 525.49
+89372,GlaxoSmithKline Consumer Healthcare Pakistan Limited,Voltral EmulGel 2%,Diclofenac diethylamine 20mg/gm,40gm,Rs. 420.93
