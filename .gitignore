@@ -1,20 +1,40 @@
-# Ignore local SQLite database files and temporary locks
+# ============================================================
+# Git Ignore Rules for Store-Inventory
+# ============================================================
+
+# Node dependencies & logs
+node_modules/
+server/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Python virtual environment
+.venv/
+venv/
+env/
+ENV/
+
+# Python cache & compiled files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# PyInstaller build artifacts
+build/
+dist/
+*.spec
+
+# Local Environment & Config overrides
+.env
+.env.local
+
+# Databases and temporary locks
 inventory.db
+test_store.db
 *.db-shm
 *.db-wal
 
-# Ignore Python cache and compiled files
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-
-# Ignore virtual environments
-venv/
-env/
-
-# Ignore Mac/Windows system files
+# Mac/Windows system files
 .DS_Store
 Thumbs.db
-4. How to us
-__pycache__

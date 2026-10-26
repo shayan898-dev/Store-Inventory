@@ -1169,32 +1169,52 @@ class InventoryApp(ctk.CTk):
         if not hasattr(self, "_inv_tree"):
             return
 
+        self._inv_status.configure(text="Loading from server...", text_color=C_TEXT_DIM)
+
+        def _fetch():
+            try:
+                url = f"{API_BASE_URL}/api/inventory"
+                if query:
+                    url += f"?q={query}"
+                resp = requests.get(url, timeout=5)
+                resp.raise_for_status()
+                products = resp.json()
+                self.after(0, lambda: self._update_inv_tree(products))
+            except requests.exceptions.RequestException as e:
+                self.after(0, lambda: self._inv_status.configure(text=f"Network Error: {e}", text_color=C_DANGER))
+                self.after(0, lambda: self._toast("⚠  Could not connect to central server"))
+                
+        threading.Thread(target=_fetch, daemon=True).start()
+
+    def _update_inv_tree(self, products):
+        if not hasattr(self, "_inv_tree"):
+            return
+            
         for row in self._inv_tree.get_children():
             self._inv_tree.delete(row)
-
-        products = self.db.search_products(query) if query else self.db.get_all_products()
-
+            
         # Remove stale checked barcodes
-        visible = {p["barcode"] for p in products}
+        visible = {str(p["barcode"]) for p in products}
         self._checked_barcodes &= visible
 
         low_n = 0
         for p in products:
-            if p["quantity"] <= 0:
+            qty = p.get("stock_count", 0)
+            if qty <= 0:
                 tag = "out_of_stock"
-            elif p["quantity"] < 5:
+            elif qty < 5:
                 tag = "low"
             else:
                 tag = "normal"
-            if 0 < p["quantity"] < 5:
+            if 0 < qty < 5:
                 low_n += 1
             chk = "☑" if p["barcode"] in self._checked_barcodes else "☐"
             
-            qty_display = "OUT OF STOCK" if p["quantity"] <= 0 else p["quantity"]
+            qty_display = "OUT OF STOCK" if qty <= 0 else qty
             
             self._inv_tree.insert("", "end", iid=p["barcode"], tags=(tag,),
                                    values=(chk, p["name"],
-                                           qty_display, format_price(p["price"]),
+                                           qty_display, format_price(float(p["price"])),
                                            p.get("expiry", "N/A"), p["barcode"]))
 
         self._sync_check_header()
@@ -1203,7 +1223,7 @@ class InventoryApp(ctk.CTk):
         s = f"{total} product{'s' if total != 1 else ''}"
         if checked: s += f"  •  ✔ {checked} selected"
         if low_n:   s += f"  •  ⚠ {low_n} low stock"
-        self._inv_status.configure(text=s)
+        self._inv_status.configure(text=s, text_color=C_TEXT_DIM)
 
     def _inv_search_changed(self, *_):
         if self._search_after:
@@ -1220,22 +1240,36 @@ class InventoryApp(ctk.CTk):
     def _inv_add(self):
         if not self._require_permission("add_product", "Add Product"):
             return
-        cats = self.db.get_categories()
+        cats = self.db.get_categories() # Keeping this local or static for now since schema has no categories table
         dlg = ProductDialog(self, "Add New Product", categories=cats)
         self.wait_window(dlg)
         if dlg.result:
             d = dlg.result
-            ok = self.db.add_product(d["barcode"], d["name"], d["category"],
-                                     d["quantity"], d["price"], d.get("original_price", 0.0), d.get("expiry", "N/A"),
-                                     user_role=self.user_role)
-            if ok:
-                self._search_var.set("")
-                self._inv_refresh()
-                self._toast("✅  Product added successfully!")
-            else:
-                messagebox.showerror("Duplicate Barcode",
-                                     f"Barcode '{d['barcode']}' already exists.\n"
-                                     "Use Edit to update it.")
+            payload = {
+                "barcode": d["barcode"],
+                "name": d["name"],
+                "category": d["category"],
+                "stock_count": d["quantity"],
+                "price": d["price"],
+                "original_price": d.get("original_price", 0.0),
+                "expiry": d.get("expiry", "N/A")
+            }
+            
+            def _post():
+                try:
+                    resp = requests.post(f"{API_BASE_URL}/api/inventory", json=payload, timeout=5)
+                    if resp.status_code == 201:
+                        self.after(0, lambda: self._search_var.set(""))
+                        self.after(0, self._inv_refresh)
+                        self.after(0, lambda: self._toast("✅  Product added successfully!"))
+                    elif resp.status_code == 409:
+                        self.after(0, lambda: messagebox.showerror("Duplicate Barcode", f"Barcode '{d['barcode']}' already exists.\nUse Edit to update it."))
+                    else:
+                        self.after(0, lambda: messagebox.showerror("Error", "Failed to add product."))
+                except requests.exceptions.RequestException as e:
+                    self.after(0, lambda: messagebox.showerror("Network Error", f"Could not connect to server: {e}"))
+
+            threading.Thread(target=_post, daemon=True).start()
 
     def _inv_edit(self):
         bc = self._inv_sel_barcode()
@@ -1243,17 +1277,53 @@ class InventoryApp(ctk.CTk):
             return
         if not self._require_permission("edit_product", "Edit Product"):
             return
-        product = self.db.find_by_barcode(bc)
-        cats = self.db.get_categories()
-        dlg = ProductDialog(self, "Edit Product", product=product, categories=cats)
-        self.wait_window(dlg)
-        if dlg.result:
-            d = dlg.result
-            self.db.update_product(d["barcode"], d["name"], d["category"],
-                                   d["quantity"], d["price"], d.get("original_price", 0.0), d.get("expiry", "N/A"),
-                                   user_role=self.user_role)
-            self._inv_refresh(self._search_var.get())
-            self._toast("✅  Product updated!")
+            
+        # We need the current product details. We'll fetch from API synchronously for simplicity in modal, or use the Treeview data.
+        # But to be safe, let's just make a quick blocking request here since it's just one item, or we can fetch it async.
+        # Given constraints, we'll fetch async and show the dialog in the callback.
+        def _fetch_and_edit():
+            try:
+                resp = requests.get(f"{API_BASE_URL}/api/inventory/{bc}", timeout=5)
+                resp.raise_for_status()
+                product = resp.json()
+                # Map keys to match ProductDialog expectations
+                product["quantity"] = product.get("stock_count", 0)
+                product["price"] = float(product.get("price", 0.0))
+                product["original_price"] = float(product.get("original_price", 0.0))
+                self.after(0, lambda: _show_edit_dialog(product))
+            except requests.exceptions.RequestException as e:
+                self.after(0, lambda: messagebox.showerror("Network Error", f"Could not fetch product details: {e}"))
+                
+        def _show_edit_dialog(product):
+            cats = self.db.get_categories()
+            dlg = ProductDialog(self, "Edit Product", product=product, categories=cats)
+            self.wait_window(dlg)
+            if dlg.result:
+                d = dlg.result
+                payload = {
+                    "name": d["name"],
+                    "category": d["category"],
+                    "stock_count": d["quantity"],
+                    "price": d["price"],
+                    "original_price": d.get("original_price", 0.0),
+                    "expiry": d.get("expiry", "N/A")
+                }
+                
+                def _put():
+                    try:
+                        resp = requests.put(f"{API_BASE_URL}/api/inventory/{d['barcode']}", json=payload, timeout=5)
+                        if resp.status_code == 200:
+                            self.after(0, lambda: self._inv_refresh(self._search_var.get()))
+                            self.after(0, lambda: self._toast("✅  Product updated!"))
+                        else:
+                            self.after(0, lambda: messagebox.showerror("Error", "Failed to update product."))
+                    except requests.exceptions.RequestException as e:
+                        self.after(0, lambda: messagebox.showerror("Network Error", f"Could not update product: {e}"))
+                
+                threading.Thread(target=_put, daemon=True).start()
+
+        self._toast("Fetching product details...", ms=1000)
+        threading.Thread(target=_fetch_and_edit, daemon=True).start()
 
     def _inv_delete(self):
         targets = list(self._checked_barcodes)
@@ -1266,18 +1336,36 @@ class InventoryApp(ctk.CTk):
         if not self._require_permission("delete_product", "Delete Product"):
             return
 
+        # Using Treeview item to get name quickly instead of API fetch
         if len(targets) == 1:
-            p = self.db.find_by_barcode(targets[0])
-            msg = f"Delete '{p['name']}'?\n\nThis cannot be undone."
+            try:
+                name = self._inv_tree.item(targets[0], "values")[1]
+            except Exception:
+                name = targets[0]
+            msg = f"Delete '{name}'?\n\nThis cannot be undone."
         else:
             msg = f"Delete {len(targets)} selected product(s)?\n\nThis cannot be undone."
 
         if messagebox.askyesno("Confirm Delete", msg):
-            for bc in targets:
-                self.db.delete_product(bc, user_role=self.user_role)
-            self._checked_barcodes.clear()
-            self._inv_refresh(self._search_var.get())
-            self._toast(f"🗑  {len(targets)} product(s) deleted.")
+            def _delete_all():
+                success_count = 0
+                for bc in targets:
+                    try:
+                        resp = requests.delete(f"{API_BASE_URL}/api/inventory/{bc}", timeout=5)
+                        if resp.status_code == 200:
+                            success_count += 1
+                    except requests.exceptions.RequestException as e:
+                        print(f"Failed to delete {bc}: {e}")
+                
+                self.after(0, self._checked_barcodes.clear)
+                self.after(0, lambda: self._inv_refresh(self._search_var.get()))
+                if success_count == len(targets):
+                    self.after(0, lambda: self._toast(f"🗑  {success_count} product(s) deleted."))
+                else:
+                    self.after(0, lambda: messagebox.showwarning("Incomplete Deletion", f"Only {success_count}/{len(targets)} items deleted due to network errors."))
+            
+            self._toast("Deleting items...")
+            threading.Thread(target=_delete_all, daemon=True).start()
 
     def _inv_export(self):
         ts = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -3119,6 +3207,8 @@ class InventoryApp(ctk.CTk):
         threading.Thread(target=_do_confirm, daemon=True).start()
 
     # ==================================================================
+    
+    def _build_settings_view(self):
         view = ctk.CTkFrame(self.content, fg_color="transparent")
         
         # Header

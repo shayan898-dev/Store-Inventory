@@ -9,6 +9,8 @@ CREATE TABLE IF NOT EXISTS inventory (
     name VARCHAR(255) NOT NULL,
     category VARCHAR(100),
     price DECIMAL(10, 2) NOT NULL,
+    original_price DECIMAL(10, 2) DEFAULT 0.00,
+    expiry VARCHAR(50) DEFAULT 'N/A',
     stock_count INT DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
